@@ -8,7 +8,7 @@ from vector_search import VectorSearch
 load_dotenv()
 
 class RAG:
-    def __init__(self, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, model: str = "llama-3.1-8b-instant"):
         """
         Inizializza il sistema RAG
 
@@ -20,7 +20,7 @@ class RAG:
         self.vector_search = VectorSearch()
 
     def setup(self):
-        """Setup del database (esegui solo la prima volta)"""
+        """Setup del database"""
         self.vector_search.setup()
 
     def add_document(self, text: str, metadata: dict = None) -> int:

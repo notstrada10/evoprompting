@@ -6,7 +6,7 @@ from huggingface_hub import InferenceClient
 load_dotenv()
 
 class EmbeddingService:
-    def __init__(self, model: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, model: str = "google/embeddinggemma-300m"):
         self.client = InferenceClient(api_key=os.environ.get("HF_TOKEN"))
         self.model = model
 
