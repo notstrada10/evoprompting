@@ -7,6 +7,7 @@ from vector_search import VectorSearch
 
 load_dotenv()
 
+
 class RAG:
     def __init__(self, model: str = "llama-3.1-8b-instant"):
         """
@@ -15,7 +16,11 @@ class RAG:
         Args:
             model: Modello Groq da usare per la generazione
         """
-        self.llm = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not found in environment variables")
+
+        self.llm = Groq(api_key=api_key)
         self.model = model
         self.vector_search = VectorSearch()
 
@@ -23,9 +28,9 @@ class RAG:
         """Setup del database"""
         self.vector_search.setup()
 
-    def add_document(self, text: str, metadata: dict = None) -> int:
+    def add_document(self, text: str, metadata: dict | None = None) -> int:
         """Aggiungi un documento alla knowledge base"""
-        return self.vector_search.add_text(text, metadata)
+        return self.vector_search.add_text(text, metadata or {})
 
     def add_documents(self, documents: list[tuple[str, dict]]) -> list[int]:
         """Aggiungi più documenti alla knowledge base"""
@@ -63,7 +68,7 @@ class RAG:
         Returns:
             Risposta generata
         """
-        # Costruisci il prompt
+        # Build the prompt
         context_text = "\n\n".join([f"- {doc}" for doc in context])
 
         system_prompt = """You are a helpful assistant. Answer the user's question based ONLY on the provided context.
@@ -77,17 +82,29 @@ Question: {query}
 
 Answer:"""
 
-        # Chiama l'LLM
-        response = self.llm.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            model=self.model,
-            temperature=0.1  # Bassa temperatura per risposte più precise
-        )
+        try:
+            # LLM Call
+            response = self.llm.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                model=self.model,
+                temperature=0.1,  # Adjust for preciseness
+            )
 
-        return response.choices[0].message.content
+            # Safe access to response content
+            if response and response.choices and len(response.choices) > 0:
+                message = response.choices[0].message
+                if message and hasattr(message, 'content') and message.content:
+                    return message.content
+                else:
+                    return "Error: No content in response message"
+            else:
+                return "Error: No choices in response"
+
+        except Exception as e:
+            return f"Error generating response: {str(e)}"
 
     def ask(self, query: str, limit: int = 3) -> dict:
         """
@@ -106,11 +123,7 @@ Answer:"""
         # 2. Generate
         answer = self.generate(query, documents)
 
-        return {
-            "query": query,
-            "answer": answer,
-            "sources": documents
-        }
+        return {"query": query, "answer": answer, "sources": documents}
 
     def close(self):
         """Chiudi le connessioni"""
