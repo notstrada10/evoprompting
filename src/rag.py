@@ -68,32 +68,31 @@ class RAG:
         Returns:
             Risposta generata
         """
-        # Build the prompt
-        context_text = "\n\n".join([f"- {doc}" for doc in context])
+        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
 
-        system_prompt = """You are a helpful assistant. Answer the user's question based ONLY on the provided context.
-If the context doesn't contain enough information to answer, say "I don't have enough information to answer that."
-Be concise and direct."""
+        system_prompt = """You are a helpful assistant that answers questions using ONLY the provided documents.
+    You must base your answer strictly on the information in the documents.
+    If multiple documents contain relevant information, synthesize them.
+    Be concise and direct in your answer."""
 
-        user_prompt = f"""Context:
-{context_text}
+        user_prompt = f"""Documents:
+    {context_text}
 
-Question: {query}
+    Question: {query}
 
-Answer:"""
+    Provide a direct answer based on the documents above."""
 
         try:
-            # LLM Call
             response = self.llm.chat.completions.create(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
                 model=self.model,
-                temperature=0.1,  # Adjust for preciseness
+                temperature=0.1,
+                max_tokens=512
             )
 
-            # Safe access to response content
             if response and response.choices and len(response.choices) > 0:
                 message = response.choices[0].message
                 if message and hasattr(message, 'content') and message.content:
@@ -118,9 +117,20 @@ Answer:"""
             Dict con risposta e documenti usati
         """
         # 1. Retrieve
-        documents = self.retrieve(query, limit=limit)
+        raw_documents = self.retrieve(query, limit=limit)
 
-        # 2. Generate
+        # 2. Deduplicate similar chunks
+        documents = []
+        seen_prefixes = set()
+
+        for doc in raw_documents:
+            # Use first 100 chars as fingerprint
+            prefix = doc[:100].strip()
+            if prefix not in seen_prefixes:
+                documents.append(doc)
+                seen_prefixes.add(prefix)
+
+        # 3. Generate
         answer = self.generate(query, documents)
 
         return {"query": query, "answer": answer, "sources": documents}
