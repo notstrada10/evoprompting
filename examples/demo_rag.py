@@ -1,15 +1,21 @@
-from rag import RAG
+import logging
+import sys
+
+sys.path.insert(0, '/Users/marcostrada/Desktop/evoprompting')
+
+from src.core.rag import RAGSystem
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def main():
-    print("=== RAG Demo ===\n")
+    logger.info("=== RAG Demo ===\n")
 
-    # Inizializza
-    rag = RAG()
+    rag = RAGSystem()
     rag.setup()
 
-    # Aggiungi documenti alla knowledge base
-    print("Adding documents to knowledge base...\n")
+    logger.info("Adding documents to knowledge base...\n")
 
     documents = [
         (
@@ -56,9 +62,8 @@ def main():
 
     rag.add_documents(documents)
 
-    print(f"\n✅ Knowledge base ready with {rag.vector_search.count()} documents\n")
+    logger.info(f"\nKnowledge base ready with {rag.vector_search.count()} documents\n")
 
-    # Fai alcune domande
     questions = [
         "What is RAG and how does it work?",
         "How can I store vectors in a database?",
@@ -67,23 +72,22 @@ def main():
 
     for question in questions:
         print("=" * 60)
-        print(f"?? Question: {question}\n")
+        print(f"Question: {question}\n")
 
         result = rag.ask(question, limit=3)
 
-        print(f"!! Answer: {result['answer']}\n")
+        print(f"Answer: {result['answer']}\n")
 
         print("Sources used:")
         for i, source in enumerate(result["sources"], 1):
             print(f"   {i}. {source}")
         print()
 
-    # Interactive mode
     print("=" * 60)
     print("Interactive mode - type 'quit' to exit\n")
 
     while True:
-        question = input("?? Your question: ").strip()
+        question = input("Your question: ").strip()
 
         if question.lower() in ["quit", "exit", "q"]:
             break
@@ -99,7 +103,7 @@ def main():
         print()
 
     rag.close()
-    print("\nDone!")
+    logger.info("\nDone!")
 
 
 if __name__ == "__main__":

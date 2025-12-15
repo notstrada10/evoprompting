@@ -212,3 +212,4 @@ src/results/
 
 # macOS
 .DS_Store
+results/
