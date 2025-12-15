@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class RAGSystem:
-    def __init__(self, model: str = None):
+    def __init__(self, model: str = None, use_reranking: bool = False):
         """
         Initialize the RAG system.
 
         Args:
             model: Model to use for generation.
+            use_reranking: Whether to use cross-encoder reranking. Defaults to False.
         """
         if Config.LLM_PROVIDER == "deepseek":
             if not Config.DEEPSEEK_API_KEY:
@@ -33,7 +34,7 @@ class RAGSystem:
             self.llm = Groq(api_key=Config.GROQ_API_KEY)
             self.model = model or Config.GROQ_MODEL
 
-        self.vector_search = VectorSearch()
+        self.vector_search = VectorSearch(use_reranking=use_reranking)
 
     def setup(self):
         """Setup the database."""
@@ -125,6 +126,7 @@ class RAGSystem:
         3. Be concise but complete.
         4. Do not make up information not present in the documents.
         5. Answer in a complete sentence that restates the question
+        6. Include all the informations gathered from the documents, when relevant.
 """
 
         user_prompt = f"""Documents:

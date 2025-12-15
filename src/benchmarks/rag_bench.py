@@ -195,7 +195,89 @@ def calculate_adherence(answer: str, retrieved_docs: List[str]) -> float:
     return len(grounded_tokens) / len(answer_tokens)
 
 
-def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_limit: int = None) -> Dict:
+def llm_judge_correctness(predicted: str, ground_truth: str, question: str, llm_client, model: str) -> dict:
+    """
+    Use an LLM to judge if the predicted answer is correct.
+
+    Args:
+        predicted: Predicted answer.
+        ground_truth: Ground truth answer.
+        question: The original question.
+        llm_client: LLM client (OpenAI-compatible).
+        model: Model name to use.
+
+    Returns:
+        Dict with 'score' (0-1), 'reasoning', and 'is_correct' (bool).
+    """
+    judge_prompt = f"""You are an expert evaluator judging the correctness of question-answering systems.
+
+Question: {question}
+
+Ground Truth Answer: {ground_truth}
+
+Predicted Answer: {predicted}
+
+Evaluate if the predicted answer is semantically equivalent to the ground truth answer. Consider:
+1. Do they convey the same core information?
+2. Are factual details accurate (dates, names, numbers)?
+3. Minor wording differences are acceptable if the meaning is preserved.
+
+Respond in this exact format:
+CORRECT: [yes/no]
+CONFIDENCE: [0.0-1.0]
+REASONING: [brief explanation]"""
+
+    try:
+        response = llm_client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a precise answer evaluator. Always follow the requested format exactly."},
+                {"role": "user", "content": judge_prompt}
+            ],
+            model=model,
+            temperature=0,
+            max_tokens=200
+        )
+
+        content = response.choices[0].message.content.strip()
+
+        # Parse response
+        lines = content.split('\n')
+        is_correct = False
+        confidence = 0.5
+        reasoning = ""
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("CORRECT:"):
+                is_correct = "yes" in line.lower()
+            elif line.startswith("CONFIDENCE:"):
+                try:
+                    confidence = float(line.split(":")[-1].strip())
+                except:
+                    confidence = 1.0 if is_correct else 0.0
+            elif line.startswith("REASONING:"):
+                reasoning = line.split(":", 1)[-1].strip()
+
+        score = confidence if is_correct else (1.0 - confidence)
+
+        return {
+            "score": score,
+            "is_correct": is_correct,
+            "confidence": confidence,
+            "reasoning": reasoning
+        }
+
+    except Exception as e:
+        logger.error(f"LLM judge error: {e}")
+        return {
+            "score": 0.0,
+            "is_correct": False,
+            "confidence": 0.0,
+            "reasoning": f"Error: {str(e)}"
+        }
+
+
+def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_limit: int = None, use_llm_judge: bool = False) -> Dict:
     """
     Run RAG system on benchmark and evaluate.
 
@@ -221,6 +303,11 @@ def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_li
         "adherence_scores": [],
         "predictions": []
     }
+
+    if use_llm_judge:
+        results["llm_judge_scores"] = []
+        results["llm_correct_count"] = 0
+        logger.info("LLM-as-judge enabled for evaluation")
 
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
 
@@ -257,6 +344,17 @@ def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_li
         utilization = calculate_context_utilization(predicted, retrieved_docs)
         adherence = calculate_adherence(predicted, retrieved_docs)
 
+        # LLM judge evaluation (optional)
+        llm_judge_result = None
+        if use_llm_judge:
+            llm_judge_result = llm_judge_correctness(
+                predicted, ground_truth, query,
+                rag.llm, rag.model
+            )
+            results["llm_judge_scores"].append(llm_judge_result["score"])
+            if llm_judge_result["is_correct"]:
+                results["llm_correct_count"] += 1
+
         results["total"] += 1
         results["exact_match"] += exact
         results["contains"] += contains
@@ -265,7 +363,7 @@ def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_li
         results["utilization_scores"].append(utilization)
         results["adherence_scores"].append(adherence)
 
-        results["predictions"].append({
+        prediction_entry = {
             "id": item.get('id'),
             "query": query,
             "predicted": predicted,
@@ -277,12 +375,26 @@ def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_li
             "utilization": utilization,
             "adherence": adherence,
             "sources": retrieved_docs
-        })
+        }
+
+        if use_llm_judge and llm_judge_result:
+            prediction_entry["llm_judge"] = {
+                "score": llm_judge_result["score"],
+                "is_correct": llm_judge_result["is_correct"],
+                "confidence": llm_judge_result["confidence"],
+                "reasoning": llm_judge_result["reasoning"]
+            }
+
+        results["predictions"].append(prediction_entry)
 
         if (idx + 1) % 10 == 0:
             avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
             avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
-            logger.info(f"Progress: {idx + 1}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}")
+            progress_msg = f"Progress: {idx + 1}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}"
+            if use_llm_judge:
+                llm_accuracy = results["llm_correct_count"] / results["total"]
+                progress_msg += f" | LLM Judge: {llm_accuracy:.1%}"
+            logger.info(progress_msg)
 
     return results
 
@@ -310,11 +422,30 @@ def print_results(results: Dict) -> None:
     avg_utilization = sum(results["utilization_scores"]) / len(results["utilization_scores"])
     avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
 
+    # Calculate fitness score
+    if "llm_judge_scores" in results:
+        fitness_score = results["llm_correct_count"] / total
+        fitness_metric = "LLM Judge Accuracy"
+    else:
+        fitness_score = avg_f1
+        fitness_metric = "F1 Score"
+
+    # Display fitness score prominently
+    logger.info(f"\n{'='*60}")
+    logger.info(f"  🎯 FITNESS SCORE: {fitness_score:.1%} ({fitness_metric})")
+    logger.info(f"{'='*60}")
+
     logger.info(f"\n=== Answer Quality Metrics ===")
     logger.info(f"  Total samples: {total}")
     logger.info(f"  Exact Match: {exact_match_rate:.2%}")
     logger.info(f"  Contains Answer: {contains_rate:.2%}")
     logger.info(f"  Average F1 Score: {avg_f1:.3f}")
+
+    if "llm_judge_scores" in results:
+        llm_accuracy = results["llm_correct_count"] / total
+        avg_llm_score = sum(results["llm_judge_scores"]) / len(results["llm_judge_scores"])
+        logger.info(f"  LLM Judge Accuracy: {llm_accuracy:.2%}")
+        logger.info(f"  LLM Judge Avg Score: {avg_llm_score:.3f}")
 
     logger.info(f"\n=== RAG Component Metrics ===")
     logger.info(f"  Context Relevance: {avg_relevance:.3f}  (Are retrieved docs relevant?)")
@@ -344,9 +475,9 @@ def save_results(results: Dict, output_dir: str = None) -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(output_dir, f"benchmark_{timestamp}.json")
 
-    # Add summary stats to saved results
+    # Calculate summary stats
     total = results["total"]
-    results["summary"] = {
+    summary = {
         "exact_match_rate": results["exact_match"] / total if total else 0,
         "contains_rate": results["contains"] / total if total else 0,
         "avg_f1": sum(results["f1_scores"]) / len(results["f1_scores"]) if results["f1_scores"] else 0,
@@ -355,8 +486,36 @@ def save_results(results: Dict, output_dir: str = None) -> None:
         "avg_adherence": sum(results["adherence_scores"]) / len(results["adherence_scores"]) if results["adherence_scores"] else 0,
     }
 
+    # Add LLM judge metrics if available
+    if "llm_judge_scores" in results:
+        summary["llm_judge_accuracy"] = results["llm_correct_count"] / total if total else 0
+        summary["llm_judge_avg_score"] = sum(results["llm_judge_scores"]) / len(results["llm_judge_scores"]) if results["llm_judge_scores"] else 0
+        # Fitness function: LLM Judge Accuracy (primary optimization target)
+        summary["fitness_score"] = summary["llm_judge_accuracy"]
+    else:
+        # Fallback if LLM judge not used: use F1 score
+        summary["fitness_score"] = summary["avg_f1"]
+
+    # Create output with summary at the top
+    output = {
+        "summary": summary,
+        "total": results["total"],
+        "exact_match": results["exact_match"],
+        "contains": results["contains"],
+        "f1_scores": results["f1_scores"],
+        "relevance_scores": results["relevance_scores"],
+        "utilization_scores": results["utilization_scores"],
+        "adherence_scores": results["adherence_scores"],
+        "predictions": results["predictions"]
+    }
+
+    # Add LLM judge data if available
+    if "llm_judge_scores" in results:
+        output["llm_judge_scores"] = results["llm_judge_scores"]
+        output["llm_correct_count"] = results["llm_correct_count"]
+
     with open(filename, 'w') as f:
-        json.dump(results, f, indent=2)
+        json.dump(output, f, indent=2)
 
     logger.info(f"\nResults saved to: {filename}")
 
@@ -375,6 +534,8 @@ def main():
                        help='Maximum number of samples to test')
     parser.add_argument('--retrieval-limit', type=int, default=None,
                        help=f'Number of documents to retrieve per query (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
+    parser.add_argument('--use-llm-judge', action='store_true',
+                       help='Enable LLM-as-judge for answer evaluation')
     args = parser.parse_args()
 
     logger.info("RagBench Evaluation")
@@ -388,7 +549,8 @@ def main():
         prepare_knowledge_base(rag, dataset, force_reload=args.force_reload)
         results = run_benchmark(rag, dataset,
                               max_samples=args.max_samples,
-                              retrieval_limit=args.retrieval_limit)
+                              retrieval_limit=args.retrieval_limit,
+                              use_llm_judge=args.use_llm_judge)
         print_results(results)
         save_results(results)
     finally:

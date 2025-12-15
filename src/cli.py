@@ -41,6 +41,8 @@ def benchmark_command(args):
         sys.argv.extend(['--max-samples', str(args.max_samples)])
     if args.retrieval_limit:
         sys.argv.extend(['--retrieval-limit', str(args.retrieval_limit)])
+    if args.use_llm_judge:
+        sys.argv.append('--use-llm-judge')
 
     benchmark_main()
 
@@ -87,6 +89,8 @@ Examples:
                                  help='Maximum samples to test (default: 50)')
     benchmark_parser.add_argument('--retrieval-limit', type=int,
                                  help=f'Documents to retrieve (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
+    benchmark_parser.add_argument('--use-llm-judge', action='store_true',
+                                 help='Enable LLM-as-judge for answer evaluation')
 
     ask_parser = subparsers.add_parser('ask', help='Ask a question')
     ask_parser.add_argument('question', help='Question to ask')

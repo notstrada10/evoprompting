@@ -23,8 +23,8 @@ class Config:
     EMBEDDING_BATCH_SIZE: int = 1  # Set to 1 to disable batching
 
     # Chunking
-    CHUNK_SIZE: int = 800
-    CHUNK_OVERLAP: int = 100
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 110
 
     # LLM
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
