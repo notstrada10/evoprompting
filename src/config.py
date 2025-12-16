@@ -23,8 +23,8 @@ class Config:
     EMBEDDING_BATCH_SIZE: int = 1  # Set to 1 to disable batching
 
     # Chunking
-    CHUNK_SIZE: int = 1000
-    CHUNK_OVERLAP: int = 110
+    CHUNK_SIZE: int = 1500
+    CHUNK_OVERLAP: int = 50
 
     # LLM
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
@@ -33,7 +33,7 @@ class Config:
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
-    LLM_TEMPERATURE: float = 0
+    LLM_TEMPERATURE: float = 0.3
     MAX_TOKENS: int = 1024
 
     # Benchmarking
