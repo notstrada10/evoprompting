@@ -548,9 +548,23 @@ def main():
     rag.setup()
 
     try:
-        # Load train split for knowledge base (documents to retrieve from)
-        train_dataset = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET, split="train")
-        prepare_knowledge_base(rag, train_dataset, force_reload=args.force_reload)
+        # Load ALL splits into knowledge base (train + validation + test documents)
+        # This ensures test questions can find their relevant documents
+        if args.force_reload or rag.vector_search.count() == 0:
+            logger.info("Loading all dataset splits (train + validation + test) into knowledge base...")
+            all_datasets = []
+            for split in ["train", "validation", "test"]:
+                split_data = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET, split=split)
+                all_datasets.append(split_data)
+                logger.info(f"  - {split}: {len(split_data)} samples")
+
+            # Combine all datasets for knowledge base
+            from datasets import concatenate_datasets
+            combined_dataset = concatenate_datasets(all_datasets)
+            logger.info(f"Total documents to index: {len(combined_dataset)} samples")
+            prepare_knowledge_base(rag, combined_dataset, force_reload=args.force_reload)
+        else:
+            logger.info(f"Knowledge base already loaded ({rag.vector_search.count()} documents)")
 
         # Load evaluation split (validation for optimization, test for final eval)
         eval_dataset = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET, split=args.eval_split)

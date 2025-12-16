@@ -127,6 +127,7 @@ class RAGSystem:
         4. Do not make up information not present in the documents.
         5. Answer in a complete sentence that restates the question.
         6. Include all the informations gathered from the documents, when relevant.
+        7. You don't need to say "Based on the provided documents" or similar phrases.
 """
 
         user_prompt = f"""Documents:
