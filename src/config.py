@@ -33,7 +33,7 @@ class Config:
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
-    LLM_TEMPERATURE: float = 0.3
+    LLM_TEMPERATURE: float = 0.0
     MAX_TOKENS: int = 1024
 
     # Benchmarking

@@ -218,3 +218,6 @@ results/
 ARCHITECTURE.md
 scripts/
 optimization*.log
+TODO.md
+queries/
+QUICKSTART.md

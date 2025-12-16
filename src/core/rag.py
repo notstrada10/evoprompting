@@ -125,7 +125,7 @@ class RAGSystem:
         2. Synthesize information from multiple documents when relevant.
         3. Be concise but complete.
         4. Do not make up information not present in the documents.
-        5. Answer in a complete sentence that restates the question
+        5. Answer in a complete sentence that restates the question.
         6. Include all the informations gathered from the documents, when relevant.
 """
 

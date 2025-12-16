@@ -536,6 +536,9 @@ def main():
                        help=f'Number of documents to retrieve per query (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
     parser.add_argument('--use-llm-judge', action='store_true',
                        help='Enable LLM-as-judge for answer evaluation')
+    parser.add_argument('--eval-split', type=str, default='test',
+                       choices=['validation', 'test'],
+                       help='Which split to evaluate on (default: test). Use validation for optimization, test for final eval.')
     args = parser.parse_args()
 
     logger.info("RagBench Evaluation")
@@ -545,9 +548,16 @@ def main():
     rag.setup()
 
     try:
-        dataset = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET)
-        prepare_knowledge_base(rag, dataset, force_reload=args.force_reload)
-        results = run_benchmark(rag, dataset,
+        # Load train split for knowledge base (documents to retrieve from)
+        train_dataset = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET, split="train")
+        prepare_knowledge_base(rag, train_dataset, force_reload=args.force_reload)
+
+        # Load evaluation split (validation for optimization, test for final eval)
+        eval_dataset = load_dataset_from_ragbench(Config.RAGBENCH_SUBSET, split=args.eval_split)
+        logger.info(f"Evaluating on {args.eval_split} split ({len(eval_dataset)} samples)")
+
+        # Run benchmark
+        results = run_benchmark(rag, eval_dataset,
                               max_samples=args.max_samples,
                               retrieval_limit=args.retrieval_limit,
                               use_llm_judge=args.use_llm_judge)
