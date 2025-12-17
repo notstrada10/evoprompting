@@ -11,8 +11,14 @@ from .core.rag import RAGSystem
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+# Silence noisy loggers
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +51,8 @@ def benchmark_command(args):
         sys.argv.append('--use-llm-judge')
     if hasattr(args, 'eval_split') and args.eval_split:
         sys.argv.extend(['--eval-split', args.eval_split])
+    if hasattr(args, 'use_hyde') and args.use_hyde:
+        sys.argv.append('--use-hyde')
 
     benchmark_main()
 
@@ -183,6 +191,8 @@ Examples:
     benchmark_parser.add_argument('--eval-split', type=str, default='test',
                                  choices=['validation', 'test'],
                                  help='Eval split: validation (for optimization) or test (final eval)')
+    benchmark_parser.add_argument('--use-hyde', action='store_true',
+                                 help='Use HyDE RAG instead of standard RAG')
 
     ask_parser = subparsers.add_parser('ask', help='Ask a question')
     ask_parser.add_argument('question', help='Question to ask')

@@ -9,6 +9,7 @@ import numpy as np
 from datasets import load_dataset
 
 from ..config import Config
+from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ def load_dataset_from_ragbench(dataset_name: str, split: str = "test"):
     return dataset
 
 
-def prepare_knowledge_base(rag: RAGSystem, dataset, force_reload: bool = False) -> None:
+def prepare_knowledge_base(rag, dataset, force_reload: bool = False) -> None:
     """
     Extract and add all unique documents to RAG knowledge base.
 
@@ -277,7 +278,7 @@ REASONING: [brief explanation]"""
         }
 
 
-def run_benchmark(rag: RAGSystem, dataset, max_samples: int = None, retrieval_limit: int = None, use_llm_judge: bool = False) -> Dict:
+def run_benchmark(rag, dataset, max_samples: int = None, retrieval_limit: int = None, use_llm_judge: bool = False) -> Dict:
     """
     Run RAG system on benchmark and evaluate.
 
@@ -539,12 +540,20 @@ def main():
     parser.add_argument('--eval-split', type=str, default='test',
                        choices=['validation', 'test'],
                        help='Which split to evaluate on (default: test). Use validation for optimization, test for final eval.')
+    parser.add_argument('--use-hyde', action='store_true',
+                       help='Use HyDE RAG instead of standard RAG')
     args = parser.parse_args()
 
     logger.info("RagBench Evaluation")
     logger.info("="*60)
 
-    rag = RAGSystem()
+    # Initialize RAG system (standard or HyDE)
+    if args.use_hyde:
+        logger.info("Using HyDE RAG system")
+        rag = HyDERAGSystem()
+    else:
+        logger.info("Using standard RAG system")
+        rag = RAGSystem()
     rag.setup()
 
     try:

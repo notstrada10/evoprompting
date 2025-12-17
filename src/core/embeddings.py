@@ -41,7 +41,7 @@ class EmbeddingService:
             self._api_client = InferenceClient(api_key=os.environ.get("HF_TOKEN"))
         return self._api_client
 
-    def get_embedding(self, text: str) -> list:
+    def get_embedding(self, text: str) -> list | None:
         """
         Generate embedding for a single text.
 
@@ -63,54 +63,3 @@ class EmbeddingService:
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return None
-
-    def get_embeddings_batch(self, texts: list[str], batch_size: int = None) -> list:
-        """
-        Generate embeddings for multiple texts.
-
-        Args:
-            texts: List of texts to embed.
-            batch_size: Number of texts per batch. Defaults to Config.EMBEDDING_BATCH_SIZE.
-                       Set to 1 to process one at a time (no batching).
-
-        Returns:
-            List of embeddings.
-        """
-        if not texts:
-            return []
-
-        batch_size = batch_size if batch_size is not None else Config.EMBEDDING_BATCH_SIZE
-
-        # If batch_size is 1, process individually (no batching)
-        if batch_size == 1:
-            embeddings = []
-            for text in texts:
-                emb = self.get_embedding(text)
-                if emb:
-                    embeddings.append(emb)
-            return embeddings
-
-        try:
-            if self.use_local:
-                results = self.local_model.encode(texts, batch_size=batch_size, show_progress_bar=False)
-                return [r.tolist() for r in results]
-            else:
-                # API batch processing
-                all_embeddings = []
-                for i in range(0, len(texts), batch_size):
-                    batch = texts[i:i + batch_size]
-                    result = self.api_client.feature_extraction(batch, model=self.model_name)
-                    if hasattr(result, 'tolist'):
-                        all_embeddings.extend(result.tolist())
-                    else:
-                        all_embeddings.extend(list(result))
-                return all_embeddings
-        except Exception as e:
-            logger.error(f"Error generating batch embeddings: {e}")
-            # Fallback to individual requests
-            embeddings = []
-            for text in texts:
-                emb = self.get_embedding(text)
-                if emb:
-                    embeddings.append(emb)
-            return embeddings
