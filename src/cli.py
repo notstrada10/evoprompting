@@ -53,6 +53,8 @@ def benchmark_command(args):
         sys.argv.extend(['--eval-split', args.eval_split])
     if hasattr(args, 'use_hyde') and args.use_hyde:
         sys.argv.append('--use-hyde')
+    if hasattr(args, 'dataset') and args.dataset:
+        sys.argv.extend(['--dataset', args.dataset])
 
     benchmark_main()
 
@@ -193,6 +195,9 @@ Examples:
                                  help='Eval split: validation (for optimization) or test (final eval)')
     benchmark_parser.add_argument('--use-hyde', action='store_true',
                                  help='Use HyDE RAG instead of standard RAG')
+    benchmark_parser.add_argument('--dataset', type=str, default='ragbench',
+                                 choices=['ragbench', 'sciq'],
+                                 help='Dataset to use: ragbench (open-ended) or sciq (multiple choice)')
 
     ask_parser = subparsers.add_parser('ask', help='Ask a question')
     ask_parser.add_argument('question', help='Question to ask')

@@ -1,0 +1,2231 @@
+{
+  "summary": {
+    "dataset": "sciq",
+    "accuracy": 0.98,
+    "exact_match_rate": 0.98,
+    "contains_correct_rate": 0.98,
+    "selected_distractor_rate": 0.03,
+    "avg_adherence": 0.7533333333333333,
+    "fitness_score": 0.98
+  },
+  "dataset": "sciq",
+  "is_multiple_choice": true,
+  "total": 100,
+  "adherence_scores": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.5,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.5,
+    0.3333333333333333,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.5,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.6666666666666666,
+    0.6666666666666666,
+    0.5,
+    1.0,
+    1.0,
+    1.0,
+    0.6666666666666666,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.5,
+    1.0,
+    1.0,
+    0.5,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0
+  ],
+  "predictions": [
+    {
+      "id": 0,
+      "question": "Compounds that are capable of accepting electrons, such as o 2 or f2, are called what?",
+      "predicted": "oxidants",
+      "correct_answer": "oxidants",
+      "correct_letter": "B",
+      "distractors": [
+        "antioxidants",
+        "Oxygen",
+        "residues"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Oxidants and Reductants Compounds that are capable of accepting electrons, such as O 2 or F2, are calledoxidants (or oxidizing agents) because they can oxidize other compounds. In the process of accepting electrons, an oxidant is reduced. Compounds that are capable of donating electrons, such as sodium metal or cyclohexane (C6H12), are calledreductants (or reducing agents) because they can cause the reduction of another compound. In the process of donating electrons, a reductant is oxidized. These relationships are summarized in Equation 3.30: Equation 3.30 Saylor URL: http://www. saylor. org/books.",
+        "Oxygen has an oxidation state of -2 in most of its compounds. Oxygen is the second most electronegative element, so it also tends to be assigned all shared electrons. Exceptions include O 2 (oxidation state = 0), peroxides, in which two oxygen atoms are connected by a single bond (oxidation state usually = -1), and any compound in which oxygen is bonded to fluorine (pretty rare and reactive)."
+      ]
+    },
+    {
+      "id": 1,
+      "question": "What term in biotechnology means a genetically exact copy of an organism?",
+      "predicted": "clone",
+      "correct_answer": "clone",
+      "correct_letter": "B",
+      "distractors": [
+        "adult",
+        "male",
+        "phenotype"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Gene cloning is making an exact copy of a gene.",
+        "But transgenic animals just have one novel gene. What about an animal with a whole new genome? Could a clone , a genetically exact copy of an organism, be developed using techniques associated with biotechnology? It could be argued that human cloning is one of the inevitable outcomes of modern biotechnology. It \"simply\" involves the removal of the nucleus from a somatic cell and its placement into an unfertilized egg cell whose nucleus has either been deactivated or removed. This new cell would mimic the zygote, the first diploid cell of a new organism. This new zygote is allowed to become established, and a few days later is placed into the uterus of a surrogate mother. Theoretically this would result in an individual genetically identical to the donor. Obviously, there are many ethical and legal issues associated with human cloning, and of course, it is not a \"simple\" procedure. But animal cloning is arguably a different story."
+      ]
+    },
+    {
+      "id": 2,
+      "question": "Vertebrata are characterized by the presence of what?",
+      "predicted": "backbone",
+      "correct_answer": "backbone",
+      "correct_letter": "D",
+      "distractors": [
+        "Bones",
+        "Muscles",
+        "Thumbs"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Figure 29.7 Vertebrata are characterized by the presence of a backbone, such as the one that runs through the middle of this fish. All vertebrates are in the Craniata clade and have a cranium. (credit: Ernest V. More; taken at Smithsonian Museum of Natural History, Washington, D.",
+        "24.4 Subphylum Vertebrata (Vertebra from Latin vertere, to turn). Characterized by separate bones or cartilage blocks firmly joined as a backbone. The backbone supports and protects a dorsal nerve cord. Vertebrates have tissues which are organized into organs which in turn are organized into organ systems. All vertebrates share the following characteristics: - segmentation - a true coelom - bilateral symmetry - cephalization - a backbone - a bony skull - a closed circulatory system - chambered heart - two pairs of jointed appendages - tissues organized into organs Vertebrate Organ Systems: - Nervous System - Circulatory System - Digestive System Respiratory System - Reproductive System - Excretory System \u2022 Vertebral column: Not present in higher vertebrate adults. (In humans, the gel-like, spongy core of the vertebral column is the only remainder. Ruptured or herniated disc is an injury to this. ) \u2022 Cranium: Composite structure of bone/cartilage. Two functions: 1. Supports sensory orga"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "What is the height above or below sea level called?",
+      "predicted": "elevation",
+      "correct_answer": "elevation",
+      "correct_letter": "B",
+      "distractors": [
+        "depth",
+        "latitude",
+        "variation"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "As you know, the surface of Earth is not flat. Some places are high, and some places are low. For example, mountain ranges like the Sierra Nevada in California or the Andes in South America are high above the surrounding areas. An accurate location must take into account the third dimension. Elevation is the height above or below sea level. Sea level refers to the height of the ocean\u2019s surface. This is the midpoint between high and low tide. Sea level can vary from place to place, but scientists base their elevation measurements on the average, or mean, sea level to make sure they have a standard reference point.",
+        "Sea level is the midpoint between high and low tide. It can vary around Earth."
+      ]
+    },
+    {
+      "id": 4,
+      "question": "Ice cores, varves and what else indicate the environmental conditions at the time of their creation?",
+      "predicted": "tree rings",
+      "correct_answer": "tree rings",
+      "correct_letter": "B",
+      "distractors": [
+        "mountain ranges",
+        "fossils",
+        "magma"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "Tree rings, ice cores, and varves indicate the environmental conditions at the time they were made.",
+        "The distinctive patterns of tree rings, ice cores, and varves go back thousands of years. They can be used to determine the time they were made."
+      ]
+    },
+    {
+      "id": 5,
+      "question": "What chemical signals in plants control different processes?",
+      "predicted": "plant hormones",
+      "correct_answer": "plant hormones",
+      "correct_letter": "A",
+      "distractors": [
+        "produce hormones",
+        "nitrogen hormones",
+        "Human Hormones"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Plant hormones are chemical signals that control different processes in plants.",
+        "Plant hormones include ethylene, gibberellins, cytokinins, absciscic acid, and auxins."
+      ]
+    },
+    {
+      "id": 6,
+      "question": "Meiosis is part of the process of gametogenesis, which is the production of what?",
+      "predicted": "sperm and eggs",
+      "correct_answer": "sperm and eggs",
+      "correct_letter": "D",
+      "distractors": [
+        "chromosomes",
+        "egg only",
+        "sperm only"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Gametogenesis (Spermatogenesis and Oogenesis) Gametogenesis, the production of sperm and eggs, takes place through the process of meiosis. During meiosis, two cell divisions separate the paired chromosomes in the nucleus and then separate the chromatids that were made during an earlier stage of the cell\u2019s life cycle. Meiosis produces haploid cells with half of each pair of chromosomes normally found in diploid cells. The production of sperm is called spermatogenesis and the production of eggs is called oogenesis. Spermatogenesis.",
+        "Gametogenesis (Spermatogenesis and Oogenesis) Gametogenesis, the production of sperm and eggs, involves the process of meiosis. During meiosis, two nuclear divisions separate the paired chromosomes in the nucleus and then separate the chromatids that were made during an earlier stage of the cell\u2019s life cycle. Meiosis and its associated cell divisions produces haploid cells with half of each pair of chromosomes normally found in diploid cells. The production of sperm is called spermatogenesis and the production of eggs is called oogenesis. Spermatogenesis Spermatogenesis occurs in the wall of the seminiferous tubules, with the most primitive cells at the periphery of the tube and the most mature sperm at the lumen of the tube (Figure 18.14). Immediately under the capsule of the tubule are diploid, undifferentiated cells. These stem cells, each called a spermatogonium (pl. spermatogonia), go through mitosis to produce one cell that remains as a stem cell and a second cell called a primar"
+      ]
+    },
+    {
+      "id": 7,
+      "question": "Which type of tree is dominant in temperate forests?",
+      "predicted": "deciduous",
+      "correct_answer": "deciduous",
+      "correct_letter": "C",
+      "distractors": [
+        "vines",
+        "fungus",
+        "shrubs"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Figure 44.18 Deciduous trees are the dominant plant in the temperate forest. (credit: Oliver Herold).",
+        "Temperate Forests Temperate forests are the most common biome in eastern North America, Western Europe, Eastern Asia, Chile, and New Zealand (Figure 20.18). This biome is found throughout mid-latitude regions. Temperatures range between \u201330oC and 30oC (\u201322oF to 86oF) and drop to below freezing on an annual basis. These temperatures mean that temperate forests have defined growing seasons during the spring, summer, and early fall. Precipitation is relatively constant throughout the year and ranges between 75 cm and 150 cm (29.5\u201359 in). Deciduous trees are the dominant plant in this biome with fewer evergreen conifers. Deciduous trees lose their leaves each fall and remain leafless in the winter. Thus, little photosynthesis occurs during the dormant winter period. Each spring, new leaves appear as temperature increases. Because of the dormant period, the net primary productivity of temperate forests is less than that of tropical rainforests. In addition, temperate forests show far less d"
+      ]
+    },
+    {
+      "id": 8,
+      "question": "What kind of viscosity is found in long-chain hydrocarbons?",
+      "predicted": "highly viscous",
+      "correct_answer": "highly viscous",
+      "correct_letter": "A",
+      "distractors": [
+        "increased viscosity",
+        "low viscosity",
+        "intense viscosity"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "There is also a correlation between viscosity and molecular shape. Liquids consisting of long, flexible molecules tend to have higher viscosities than those composed of more spherical or shorter-chain molecules. The longer the molecules, the easier it is for them to become \u201ctangled\u201d with one another, making it more difficult for them to move past one another. London dispersion forces also increase with chain length. Due to a combination of these two effects, long-chain hydrocarbons (such as motor oils) are highly viscous.",
+        "When you pour a glass of water, or fill a car with gasoline, you observe that water and gasoline flow freely. But when you pour syrup on pancakes or add oil to a car engine, you note that syrup and motor oil do not flow as readily. The viscosity of a liquid is a measure of its resistance to flow. Water, gasoline, and other liquids that flow freely have a low viscosity. Honey, syrup, motor oil, and other liquids that do not flow freely, like those shown in Figure 10.15, have higher viscosities. We can measure viscosity by measuring the rate at which a metal ball falls through a liquid (the ball falls more slowly through a more viscous liquid) or by measuring the rate at which a liquid flows through a narrow tube (more viscous liquids flow more slowly)."
+      ]
+    },
+    {
+      "id": 9,
+      "question": "Ionic compounds have strong electrostatic attractions between oppositely charged ions in this?",
+      "predicted": "regular array",
+      "correct_answer": "regular array",
+      "correct_letter": "A",
+      "distractors": [
+        "incorrect array",
+        "normal array",
+        "occasional array"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "Ionic and covalent compounds are held together by electrostatic attractions between oppositely charged particles. Describe the differences in the nature of the attractions in ionic and covalent compounds. Which class of compounds contains pairs of electrons shared between bonded atoms?.",
+        "Note the Pattern Ionic compounds contain both cations and anions in a ratio that results in zero electrical charge. In covalent compounds, electrons are shared between bonded atoms and are simultaneously attracted to more than one nucleus. In contrast, ionic compounds contain cations and anions rather than discrete neutral molecules. Ionic compounds are held together by the attractive electrostatic interactions between cations and anions. In an ionic compound, the cations and anions are arranged in space to form an extended three-dimensional array that maximizes the number of attractive electrostatic interactions and minimizes the number of repulsive electrostatic interactions (Figure 2.5 \"Covalent and Ionic Bonding\"). As shown in Equation 2.1, the electrostatic energy of the interaction between two charged particles is proportional to the product of the charges on the particles and inversely proportional to the distance between them: Saylor URL: http://www. saylor. org/books."
+      ]
+    },
+    {
+      "id": 10,
+      "question": "About how tall can mid-ocean ridges be?",
+      "predicted": "about 2 km",
+      "correct_answer": "about 2 km",
+      "correct_letter": "D",
+      "distractors": [
+        "about 2 meters",
+        "about 2 feet",
+        "2 inches"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.3333333333333333,
+      "sources": [
+        "Besides seamounts, there are long, very tall (about 2 km) mountain ranges. These ranges are connected so that they form huge ridge systems called mid-ocean ridges ( Figure below ). The mid-ocean ridges form from volcanic eruptions. Lava from inside Earth breaks through the crust and creates the mountains.",
+        "Tectonic plates are large segments of the Earth\u2019s crust that move slowly. Suppose that one such plate has an average speed of 4.0 cm/year. (a) What distance does it move in 1 s at this speed? (b) What is its speed in kilometers per million years? 10. (a) Refer to Table 1.3 to determine the average distance between the Earth and the Sun. Then calculate the average speed of the Earth in its orbit in kilometers per second. (b) What is this in meters per second?."
+      ]
+    },
+    {
+      "id": 11,
+      "question": "What are by far the most common type of invertebrate?",
+      "predicted": "insects",
+      "correct_answer": "insects",
+      "correct_letter": "A",
+      "distractors": [
+        "spiders",
+        "crustaceans",
+        "corals"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Insects are arthropods in the class Hexapoda. They are the most numerous organisms in the world.",
+        "The majority of living animals are invertebrates. Invertebrates lack a backbone."
+      ]
+    },
+    {
+      "id": 12,
+      "question": "What do waves deposit to form sandbars and barrier islands?",
+      "predicted": "sediments",
+      "correct_answer": "sediments",
+      "correct_letter": "A",
+      "distractors": [
+        "magma",
+        "organisms",
+        "glaciers"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Waves may also deposit sediments to form sandbars and barrier islands . You can see examples of these landforms in Figure below .",
+        "The power of the ocean modifies landforms by erosion and deposition. Landforms modified by both erosion and deposition are seen in this photo. The cliff is being eroded by incoming waves. The beach is being created as sand is being deposited."
+      ]
+    },
+    {
+      "id": 13,
+      "question": "Penis, testes, and epididymis are organs in what system?",
+      "predicted": "male reproductive system",
+      "correct_answer": "male reproductive system",
+      "correct_letter": "B",
+      "distractors": [
+        "virus reproductive system\u200b",
+        "plant reproductive system\u200b",
+        "female reproductive system\u200b"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Male Reproductive Structures. Organs of the male reproductive system include the penis, testes, and epididymis. Several ducts and glands are also part of the system. Do you know the reproductive functions of any of these structures?.",
+        "Male reproductive organs include the penis, testes, and epididymis."
+      ]
+    },
+    {
+      "id": 14,
+      "question": "Only about one percent of plants have lost what ability, turning them into consumers and even predators, instead of producers?",
+      "predicted": "photosynthesis",
+      "correct_answer": "photosynthesis",
+      "correct_letter": "D",
+      "distractors": [
+        "flowering",
+        "rooting",
+        "growth"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Almost all plants make food by photosynthesis . Only about 1 percent of the estimated 300,000 species of plants have lost the ability to photosynthesize. These other species are consumers, many of them predators. How do plants prey on other organisms? The Venus fly trap in Figure below shows one way this occurs.",
+        "Almost all plants make food by photosynthesis. Only about 1 percent of the estimated 300,000 species of plants have lost the ability to photosynthesize. These other species are consumers, many of them predators. How do plants prey on other organisms? The Venus fly trap in Figure below shows one way this occurs."
+      ]
+    },
+    {
+      "id": 15,
+      "question": "How does a neon light produce visible light?",
+      "predicted": "electroluminescence",
+      "correct_answer": "electroluminescence",
+      "correct_letter": "C",
+      "distractors": [
+        "luminescence",
+        "radiation",
+        "mitosis"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": true,
+      "adherence": 0.0,
+      "sources": [
+        "A neon light produces visible light by electroluminescence. In this process, neon or some other gas gives off light when an electric current passes through it. Other halogen gases besides neon\u2014including krypton and argon\u2014also produce light in this way. The word \u201cOPEN\u201d in the sign below is a neon light. It is a long glass tube that contains neon gas. When electricity passes through the gas, it excites electrons of neon atoms, and the electrons jump to a higher energy level. As the excited electrons return to their original energy level, they give off visible light. Neon produces red light. Other gases produce light of different colors. For example, krypton produces violet light, and argon produces blue light.",
+        "A neon light produces visible light by electroluminescence. The bulb is a glass tube that contains the noble gas neon. When electricity passes through the gas, it excites electrons of neon atoms, causing them to give off visible light. Neon produces red light. Other noble gases are also used in lights, and they produce light of different colors. For example, krypton produces violet light, and argon produces blue light."
+      ]
+    },
+    {
+      "id": 16,
+      "question": "The bird ancestor that lived in trees developed what feature commonly associated with birds?",
+      "predicted": "wings",
+      "correct_answer": "wings",
+      "correct_letter": "A",
+      "distractors": [
+        "tails",
+        "webbed feet",
+        "beaks"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Wings evolved in a bird ancestor that lived in trees. Thus, wings are modified arms that helped the animal glide from branch to branch.",
+        "Wings and feathers are two adaptations for flight that evolved in birds. Both are clearly displayed in the flying gull in Figure below . Wings evolved from the front limbs of a four-legged ancestor. The wings are controlled by large flight muscles in the chest. Feathers also help birds fly. They provide air resistance and lift. In addition, they provide insulation and serve other roles."
+      ]
+    },
+    {
+      "id": 17,
+      "question": "What do most living things use to make atp from glucose?",
+      "predicted": "oxygen",
+      "correct_answer": "oxygen",
+      "correct_letter": "A",
+      "distractors": [
+        "enzymes",
+        "carbon",
+        "nitrogen"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "What is the source of glucose for living things? It is made by plants and certain other organisms. The process in which glucose is made using energy in light is photosynthesis . This process requires carbon dioxide and water. It produces oxygen in addition to glucose.",
+        "Photosynthesis changes light energy to chemical energy. The chemical energy is stored in the bonds of glucose molecules. Glucose is used for energy by the cells of almost all living things. Plants make their own glucose. Other organisms get glucose by consuming plants (or organisms that consume plants). How do living things get energy from glucose? The answer is cellular respiration."
+      ]
+    },
+    {
+      "id": 18,
+      "question": "What are the two most common silicates?",
+      "predicted": "feldspar and quartz",
+      "correct_answer": "feldspar and quartz",
+      "correct_letter": "C",
+      "distractors": [
+        "Olivine and quartz",
+        "Micas\t and feldspar",
+        "Micas\t and quartz"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Feldspar and quartz are the two most common silicates. In beryl, the silicate pyramids join together as rings. Biotite is mica. It can be broken apart into thin, flexible sheets. Compare the beryl and the biotite shown in Figure below .",
+        "Feldspar and quartz are the two most common silicates. In beryl, the silicate pyramids join together as rings. Biotite is mica. The silicate pyramids come together to create thin, flexible sheets. Compare the beryl and the biotite pictured below ( Figure below )."
+      ]
+    },
+    {
+      "id": 19,
+      "question": "What term means the amount of water vapor in the air?",
+      "predicted": "humidity",
+      "correct_answer": "humidity",
+      "correct_letter": "D",
+      "distractors": [
+        "temperature",
+        "pressure",
+        "ambient"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Humidity is the amount of water vapor in the air. Relative humidity is the percent of water vapor in the air relative to the total amount the air can hold. The total amount depends on temperature.",
+        "Humidity is the amount of water vapor in the air. High humidity increases the chances of clouds and precipitation."
+      ]
+    },
+    {
+      "id": 20,
+      "question": "Paracrine signals move by what method through the extracellular matrix?",
+      "predicted": "diffusion",
+      "correct_answer": "diffusion",
+      "correct_letter": "B",
+      "distractors": [
+        "osmosis",
+        "deposition",
+        "transfusion"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "5. Assume a molecule must cross the plasma membrane into a cell. The molecule is a very large protein. How will it be transported into the cell? Explain your answer.",
+        "larger molecules may also leave the blood through intercellular clefts. Larger molecules can pass through the pores of fenestrated capillaries, and even large plasma proteins can pass through the great gaps in the sinusoids. Some large proteins in blood plasma can move into and out of the endothelial cells packaged within vesicles by endocytosis and exocytosis. Water moves by osmosis."
+      ]
+    },
+    {
+      "id": 21,
+      "question": "Presence of a cell wall, large central vacuole, and organelles called plastids distinguish what type of cell?",
+      "predicted": "plant",
+      "correct_answer": "plant",
+      "correct_letter": "A",
+      "distractors": [
+        "animal",
+        "reproductive",
+        "heterotroph"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Plant cells have a cell wall, a large central vacuole, and plastids such as chloroplasts.",
+        "Animal Cells versus Plant Cells At this point, you know that each eukaryotic cell has a plasma membrane, cytoplasm, a nucleus, ribosomes, mitochondria, peroxisomes, and in some, vacuoles, but there are some striking differences between animal and plant cells. While both animal and plant cells have microtubule organizing centers (MTOCs), animal cells also have centrioles associated with the MTOC: a complex called the centrosome. Animal cells each have a centrosome and lysosomes, whereas plant cells do not. Plant cells have a cell wall, chloroplasts and other specialized plastids, and a large central vacuole, whereas animal cells do not. The Centrosome The centrosome is a microtubule-organizing center found near the nuclei of animal cells. It contains a pair of centrioles, two structures that lie perpendicular to each other ( Figure 4.15). Each centriole is a cylinder of nine triplets of microtubules."
+      ]
+    },
+    {
+      "id": 22,
+      "question": "What happens when mammals raise their hair with tiny muscles in the skin?",
+      "predicted": "goosebumps",
+      "correct_answer": "goosebumps",
+      "correct_letter": "C",
+      "distractors": [
+        "bleeding",
+        "balding",
+        "bruising"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Mammals raise their hair with tiny muscles in the skin. Even humans automatically contract these muscles when they are cold. They cause \u201cgoosebumps,\u201d as shown here.",
+        "Goosebumps. Mammals raise their hair with tiny muscles in the skin. Even humans automatically contract these muscles when they are cold. They cause \u201cgoosebumps,\u201d as shown here."
+      ]
+    },
+    {
+      "id": 23,
+      "question": "What are people with osteoporosis at increased risk of?",
+      "predicted": "bone fractures",
+      "correct_answer": "bone fractures",
+      "correct_letter": "C",
+      "distractors": [
+        "epilepsy",
+        "senility",
+        "growth spurt"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "Osteoporosis is a common age-related bone disease in which bone density and strength is decreased. Watch this video (http://openstaxcollege. org/l/osteoporosis) to get a better understanding of how thoracic vertebrae may become weakened and may fracture due to this disease. How may vertebral osteoporosis contribute to kyphosis?.",
+        "dietary calcium levels, causing a compensatory increase in parathyroid hormone. However, increased parathyroid hormone levels combined with decreased levels of calcitonin (and estrogens in women) can lead to osteoporosis as PTH stimulates demineralization of bones to increase blood calcium levels. Notice that osteoporosis is common in both elderly males and females. Increasing age also affects glucose metabolism, as blood glucose levels spike more rapidly and take longer to return to normal in the elderly. In addition, increasing glucose intolerance may occur because of a gradual decline in cellular insulin sensitivity. Almost 27 percent of Americans aged 65 and older have diabetes."
+      ]
+    },
+    {
+      "id": 24,
+      "question": "Where is energy stored in a chemical substance?",
+      "predicted": "between atoms",
+      "correct_answer": "between atoms",
+      "correct_letter": "B",
+      "distractors": [
+        "on the surface",
+        "in molecules",
+        "inside atoms"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "energy that is stored in the connections between atoms in a chemical substance.",
+        "Potential energy is energy stored in matter."
+      ]
+    },
+    {
+      "id": 25,
+      "question": "By the year 2050, 25 percent of the population of the united states will be 60 years of age or older. the cdc estimates that 80 percent of those 60 years and older have one or more chronic disease associated with deficiencies of this?",
+      "predicted": "immune system",
+      "correct_answer": "immune system",
+      "correct_letter": "C",
+      "distractors": [
+        "respiratory system",
+        "cardiovascular system",
+        "blood vessels"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Immune System By the year 2050, 25 percent of the population of the United States will be 60 years of age or older. The CDC estimates that 80 percent of those 60 years and older have one or more chronic disease associated with deficiencies of the immune systems. This loss of immune function with age is called immunosenescence. To treat this growing population, medical professionals must better understand the aging process. One major cause of age-related immune deficiencies is thymic involution, the shrinking of the thymus gland that begins at birth, at a rate of about three percent tissue loss per year, and continues until 35\u201345 years of age, when the rate declines to about one percent loss per year for the rest of one\u2019s life. At that pace, the total loss of thymic epithelial tissue and thymocytes would occur at about 120 years of age. Thus, this age is a theoretical limit to a healthy human lifespan. Thymic involution has been observed in all vertebrate species that have a thymus glan",
+        "The immune system naturally becomes less effective as people get older. This is why older people are generally more susceptible to disease."
+      ]
+    },
+    {
+      "id": 26,
+      "question": "Upon death of an organism, during composition, what returns to the soil as ammonium ions?",
+      "predicted": "nitrogen",
+      "correct_answer": "nitrogen",
+      "correct_letter": "B",
+      "distractors": [
+        "potasium",
+        "calcium",
+        "hydrogen"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "When organisms die and decompose, their nitrogen is returned to the soil as ammonium ions. Nitrifying bacteria change some of the ammonium ions into nitrates.",
+        "When plants and other organisms die, decomposers break down their remains. In the process, they release nitrogen in the form of ammonium ions. Nitrifying bacteria change the ammonium ions into nitrates. Some of the nitrates are used by plants. Some are changed back to nitrogen gas by denitrifying bacteria."
+      ]
+    },
+    {
+      "id": 27,
+      "question": "Most insects reproduce quickly and through what type of reproduction?",
+      "predicted": "sexual reproduction",
+      "correct_answer": "sexual reproduction",
+      "correct_letter": "A",
+      "distractors": [
+        "spores",
+        "photosynthesis",
+        "asexual reproduction"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Most insects can reproduce very quickly within a short period of time. With a short generation time, they evolve faster and can quickly adjust to environmental changes. Most insects reproduce by sexual reproduction . The female produces eggs, which are fertilized by the male, and then the eggs are usually placed near the required food. In some insects, there is asexual reproduction during which the offspring come from a single parent. In this type of reproduction, the offspring are almost identical to the mother. This is most often seen in aphids and scale insects.",
+        "Some organisms can reproduce sexually or asexually. Under what conditions might each type of reproduction be an advantage?."
+      ]
+    },
+    {
+      "id": 28,
+      "question": "Digestion of proteins begins with acids in what organ?",
+      "predicted": "stomach",
+      "correct_answer": "stomach",
+      "correct_letter": "D",
+      "distractors": [
+        "colon",
+        "liver",
+        "brain"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "24.4 Protein Metabolism Digestion of proteins begins in the stomach, where HCl and pepsin begin the process of breaking down proteins into their constituent amino acids. As the chyme enters the small intestine, it mixes with bicarbonate and digestive enzymes. The bicarbonate neutralizes the acidic HCl, and the digestive enzymes break down the proteins into smaller peptides and amino acids. Digestive hormones secretin and CCK are released from the small intestine to aid in digestive processes, and digestive proenzymes are released from the pancreas (trypsinogen and chymotrypsinogen). Enterokinase, an enzyme located in the wall of the small intestine, activates trypsin, which in turn activates chymotrypsin. These enzymes liberate the individual amino acids that are then transported via sodium-amino acid transporters across the intestinal wall into the cell. The amino acids are then transported into the bloodstream for dispersal to the liver and cells throughout the body to be used to cre",
+        "serve as a metabolic fuel source. Proteins are not stored for later use, so excess proteins must be converted into glucose or triglycerides, and used to supply energy or build energy reserves. Although the body can synthesize proteins from amino acids, food is an important source of those amino acids, especially because humans cannot synthesize all of the 20 amino acids used to build proteins. The digestion of proteins begins in the stomach. When protein-rich foods enter the stomach, they are greeted by a mixture of the enzyme pepsin and hydrochloric acid (HCl; 0.5 percent). The latter produces an environmental pH of 1.5\u20133.5 that denatures proteins within food. Pepsin cuts proteins into smaller polypeptides and their constituent amino acids. When the food-gastric juice mixture (chyme) enters the small intestine, the pancreas releases sodium bicarbonate to neutralize the HCl. This helps to protect the lining of the intestine. The small intestine also releases digestive hormones, includi"
+      ]
+    },
+    {
+      "id": 29,
+      "question": "Many species of rotifers exhibit haplodiploidy, which is a method of what?",
+      "predicted": "gender determination",
+      "correct_answer": "gender determination",
+      "correct_letter": "D",
+      "distractors": [
+        "circulation",
+        "digestion",
+        "respiration"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Watch this video (http://openstaxcollege. org/l/rotifers) to see rotifers feeding. Rotifers are pseudocoelomates commonly found in fresh water and some salt water environments throughout the world. Figure 28.17 shows the anatomy of a rotifer belonging to class Bdelloidea. About 2,200 species of rotifers have been identified. Rotifers are dioecious organisms (having either male or female genitalia) and exhibit sexual dimorphism (males and females have different forms). Many species are parthenogenic and exhibit haplodiploidy, a method of gender determination in which a fertilized egg develops into a female and an unfertilized egg develops into a male. In many dioecious species, males are short-lived and smaller with no digestive system and a single testis. Females can produce eggs that are capable of dormancy for protection during harsh environmental conditions.",
+        "REVIEW QUESTIONS 4. Which form of reproduction is thought to be best in a stable environment? a. asexual b. sexual c. budding d. parthenogenesis 5. Which form of reproduction can result from damage to the original animal? a. asexual b. fragmentation c. budding d. parthenogenesis 6. Which form of reproduction is useful to an animal with little mobility that reproduces sexually? a. fission b. budding c. parthenogenesis d. hermaphroditism 7. Genetically unique individuals are produced through ________."
+      ]
+    },
+    {
+      "id": 30,
+      "question": "What is the most abundant metal of the earth's crust?",
+      "predicted": "aluminum",
+      "correct_answer": "aluminum",
+      "correct_letter": "B",
+      "distractors": [
+        "calcium",
+        "copper",
+        "magnetite"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Metals represent approximately 25% of the elemental makeup of the Earth's crust. The bulk of these metals, primarily aluminum, iron, calcium, sodium, potassium, and magnesium, are typically found in combined form. The most abundant metal is aluminum, which occurs almost exclusively as the ionic mineral bauxite. The other most common metals, including iron, sodium, potassium, magnesium, and calcium, are also found primarily as the cationic portion of an ionic compound. Very few metals actually occur naturally as pure substances. The ones that do are often referred to as precious or semi-precious metals.",
+        "The Alkaline Earth Metals The alkaline earth metals are beryllium, magnesium, calcium, strontium, barium, and radium. Beryllium, strontium, and barium are rather rare, and radium is unstable and highly radioactive. In contrast, calcium and magnesium are the fifth and sixth most abundant elements on Earth, respectively; they are found in huge deposits of limestone and other minerals."
+      ]
+    },
+    {
+      "id": 31,
+      "question": "What is the term for the total kinetic energy of moving particles of matter?",
+      "predicted": "thermal energy",
+      "correct_answer": "thermal energy",
+      "correct_letter": "D",
+      "distractors": [
+        "heavy energy",
+        "mechanical energy",
+        "Newton's energy"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The total kinetic energy of moving particles of matter is called thermal energy.",
+        "Kinetic energy is the energy of motion."
+      ]
+    },
+    {
+      "id": 32,
+      "question": "What part of the eye allows light to enter?",
+      "predicted": "pupil",
+      "correct_answer": "pupil",
+      "correct_letter": "D",
+      "distractors": [
+        "eyelid",
+        "retina",
+        "iris"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Next, light passes through the pupil. The pupil is a black opening in the eye that lets light enter the eye.",
+        "The pupil is an opening in the front of the eye. It looks black because it doesn\u2019t reflect any light. It allows light to enter the eye. The pupil automatically gets bigger or smaller to let more or less light in as needed."
+      ]
+    },
+    {
+      "id": 33,
+      "question": "The body cannot sustain for very long the bursts of energy mediated by epinephrine and norepinephrine, hormones associated with what stress response?",
+      "predicted": "fight-or-flight",
+      "correct_answer": "fight-or-flight",
+      "correct_letter": "B",
+      "distractors": [
+        "do-or-die",
+        "fainting",
+        "sink-or-swim"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Short-term Stress Response When presented with a stressful situation, the body responds by calling for the release of hormones that provide a burst of energy. The hormones epinephrine (also known as adrenaline) and norepinephrine (also known as noradrenaline) are released by the adrenal medulla. How do these hormones provide a burst of energy? Epinephrine and norepinephrine increase blood glucose levels by stimulating the liver and skeletal muscles to break down glycogen and by stimulating glucose release by liver cells. Additionally, these hormones increase oxygen availability to cells by increasing the heart rate and dilating the bronchioles. The hormones also prioritize body function by increasing blood supply to essential organs such as the heart, brain, and skeletal muscles, while restricting blood flow to organs not in immediate need, such as the skin, digestive system, and kidneys. Epinephrine and norepinephrine are collectively called catecholamines.",
+        "Watch this Discovery Channel animation (http://openstaxcollege. org/l/adrenaline) describing the flight-or-flight response. Long-term Stress Response Long-term stress response differs from short-term stress response. The body cannot sustain the bursts of energy mediated by epinephrine and norepinephrine for long times. Instead, other hormones come into play. In a long-term stress response, the hypothalamus triggers the release of ACTH from the anterior pituitary gland. The adrenal cortex is stimulated by ACTH to release steroid hormones called corticosteroids. Corticosteroids turn on transcription of certain genes in the nuclei of target cells. They change enzyme concentrations in the cytoplasm and affect cellular metabolism. There are two main corticosteroids: glucocorticoids such as cortisol, and mineralocorticoids such as aldosterone. These hormones target the breakdown of fat into fatty acids in the adipose tissue. The fatty acids are released into the bloodstream for other tissues"
+      ]
+    },
+    {
+      "id": 34,
+      "question": "What system enters the brain stem and influences activity in the cerebellum, spinal cord, and cerebral cortex?",
+      "predicted": "vestibular system",
+      "correct_answer": "vestibular system",
+      "correct_letter": "B",
+      "distractors": [
+        "vasculature system",
+        "ventrical system",
+        "lipids system"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "mic tract is primarily responsible for pain and temperature sensation and crosses the midline in the spinal cord at the level at which it enters. The trigeminal nerve adds similar sensation information from the head to these pathways. The auditory pathway passes through multiple nuclei in the brain stem in which additional information is extracted from the basic frequency stimuli processed by the cochlea. Sound localization is made possible through the activity of these brain stem structures. The vestibular system enters the brain stem and influences activity in the cerebellum, spinal cord, and cerebral cortex. The visual pathway segregates information from the two eyes so that one half of the visual field projects to the other side of the brain. Within visual cortical areas, the perception of the stimuli and their location is passed along two streams, one ventral and one dorsal. The ventral visual stream connects to structures in the temporal lobe that are important for long-term memo",
+        "Figure 13.13 The Cerebellum The cerebellum is situated on the posterior surface of the brain stem. Descending input from the cerebellum enters through the large white matter structure of the pons. Ascending input from the periphery and spinal cord enters through the fibers of the inferior olive. Output goes to the midbrain, which sends a descending signal to the spinal cord."
+      ]
+    },
+    {
+      "id": 35,
+      "question": "In what type of animals may a body cavity be present or absent?",
+      "predicted": "vertebrate",
+      "correct_answer": "triploblastic",
+      "correct_letter": "C",
+      "distractors": [
+        "vertebrate",
+        "bicellular",
+        "nonvascular"
+      ],
+      "is_correct": false,
+      "exact_match": false,
+      "contains_correct": false,
+      "selected_distractor": true,
+      "adherence": 1.0,
+      "sources": [
+        "Figure 33.6 Vertebrate animals have two major body cavities. The dorsal cavity, indicated in green, contains the cranial and the spinal cavity. The ventral cavity, indicated in yellow, contains the thoracic cavity and the abdominopelvic cavity. The thoracic cavity is separated from the abdominopelvic cavity by the diaphragm. The thoracic cavity is separated into the abdominal cavity and the pelvic cavity by an imaginary line parallel to the pelvis bones. (credit: modification of work by NCI).",
+        "Flatworms have no true body cavity, but they do have bilateral symmetry. Due to the lack of a body cavity,flatworms are known as acoelomates."
+      ]
+    },
+    {
+      "id": 36,
+      "question": "Chemical reactions involve a transfer of heat energy. measured in what?",
+      "predicted": "joules",
+      "correct_answer": "joules",
+      "correct_letter": "C",
+      "distractors": [
+        "amps",
+        "amperes",
+        "thermals"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Chemical reactions involve a transfer of heat energy. Measured in joules.",
+        "Heat changes in chemical reactions are typically measured in joules rather than calories. The conversion between a joule and a calorie is shown below."
+      ]
+    },
+    {
+      "id": 37,
+      "question": "Trees and shrubs are example of what type of plant?",
+      "predicted": "perennials",
+      "correct_answer": "perennials",
+      "correct_letter": "D",
+      "distractors": [
+        "biennial",
+        "annuals",
+        "grasses"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Terrestrial biomes , which are land-based, such as deserts and forests.",
+        "Introduction Plants are as essential to human existence as land, water, and air. Without plants, our day-to-day lives would be impossible because without oxygen from photosynthesis, aerobic life cannot be sustained. From providing food and shelter to serving as a source of medicines, oils, perfumes, and industrial products, plants provide humans with numerous valuable resources. When you think of plants, most of the organisms that come to mind are vascular plants. These plants have tissues that conduct food and water, and they have seeds. Seed plants are divided into gymnosperms and angiosperms. Gymnosperms include the needle-leaved conifers\u2014spruce, fir, and pine\u2014as well as less familiar plants, such as ginkgos and cycads. Their seeds are not enclosed by a fleshy fruit. Angiosperms, also called flowering plants, constitute the majority of seed plants. They include broadleaved trees (such as maple, oak, and elm), vegetables (such as potatoes, lettuce, and carrots), grasses, and plants k"
+      ]
+    },
+    {
+      "id": 38,
+      "question": "The products of what process are needed for cellular respiration, and vice versa?",
+      "predicted": "photosynthesis",
+      "correct_answer": "photosynthesis",
+      "correct_letter": "B",
+      "distractors": [
+        "digestion",
+        "spermatogenesis",
+        "circulation"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Photosynthesis and cellular respiration are connected through an important relationship. This relationship enables life to survive as we know it. The products of one process are the reactants of the other. Notice that the equation for cellular respiration is the direct opposite of photosynthesis :.",
+        "Cellular respiration and photosynthesis are like two sides of the same coin. This is clear from the diagram in Figure below . The products of photosynthesis are needed for cellular respiration. The products of cellular respiration are needed for photosynthesis. Together, the two processes store and release energy in virtually all living things."
+      ]
+    },
+    {
+      "id": 39,
+      "question": "Most fungi get organic compounds from what?",
+      "predicted": "dead or alive organisms",
+      "correct_answer": "dead organisms",
+      "correct_letter": "A",
+      "distractors": [
+        "inorganic material",
+        "living organisms",
+        "carnivorous organisms"
+      ],
+      "is_correct": false,
+      "exact_match": false,
+      "contains_correct": false,
+      "selected_distractor": false,
+      "adherence": 0.6666666666666666,
+      "sources": [
+        "Most fungi grow on moist soil or rotting vegetation such as dead logs. Some fungi live in water. Others live in or on other organisms. Fungi get their nutrition by absorbing organic compounds from other organisms. The other organisms may be dead or alive, depending on the fungus.",
+        "Fungi are heterotrophs, meaning they obtain food from outside themselves."
+      ]
+    },
+    {
+      "id": 40,
+      "question": "How do very massive stars end their lives?",
+      "predicted": "become red supergiants",
+      "correct_answer": "become red supergiants",
+      "correct_letter": "B",
+      "distractors": [
+        "become super novas",
+        "explode",
+        "consumed by black hole"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.6666666666666666,
+      "sources": [
+        "A more massive star ends its life in a more dramatic way. Very massive stars become red supergiants, like Betelgeuse.",
+        "After a star becomes a red giant, it will take one of several different paths to end its life. Which path is followed by a star after the red giant phase depends on its mass. During the fusion life of a star, its size is the result of a competition between fusion heat pushing the material out and gravity pulling the material in. At the end, gravity always wins. After the star has lived through its red giant stage, the fusion essentially ends (the star runs out of fuel) allowing gravity to collapse the star. Some of the outer layers of material will be blown away and the core becomes smaller and denser. The core will become either a neutron star, a white dwarf, a black dwarf, or a black hole."
+      ]
+    },
+    {
+      "id": 41,
+      "question": "Pairs of nitrogenous bases are attached to each other by?",
+      "predicted": "hydrogen bonds",
+      "correct_answer": "hydrogen bonds",
+      "correct_letter": "B",
+      "distractors": [
+        "potassium bonds",
+        "ionic bonds",
+        "magnetism"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "Ionic and covalent compounds are held together by electrostatic attractions between oppositely charged particles. Describe the differences in the nature of the attractions in ionic and covalent compounds. Which class of compounds contains pairs of electrons shared between bonded atoms?.",
+        "onds, covalent bonds, and hydrogen bonds."
+      ]
+    },
+    {
+      "id": 42,
+      "question": "Rupture can cause fragments of what to travel via the bloodstream and become lodged in other arteries?",
+      "predicted": "plaque",
+      "correct_answer": "plaque",
+      "correct_letter": "D",
+      "distractors": [
+        "enamel",
+        "red blood cells",
+        "white blood cells"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Atherosclerosis is the buildup of plaque inside arteries (see Figure below ). Plaque consists of cell debris, cholesterol, and other substances. Factors that contribute to plaque buildup include a high-fat diet and smoking. As plaque builds up, it narrows the arteries and reduces blood flow. You can watch an animation about atherosclerosis at these links: http://www. youtube. com/watch?v=fLonh7ZesKs and http://www. youtube. com/watch?v=qRK7-DCDKEA .",
+        "lammation spreads into the artery wall, it weakens and scars it, leaving it stiff (sclerotic). As a result, compliance is reduced. Moreover, circulating triglycerides and cholesterol can seep between the damaged lining cells and become trapped within the artery wall, where they are frequently joined by leukocytes, calcium, and cellular debris. Eventually, this buildup, called plaque, can narrow arteries enough to impair blood flow. The term for this condition, atherosclerosis (athero- = \u201cporridge\u201d) describes the mealy deposits (Figure 20.14)."
+      ]
+    },
+    {
+      "id": 43,
+      "question": "The strength of a base depends on the concentration of _______ it produces when dissolved in water?",
+      "predicted": "hydroxide ions",
+      "correct_answer": "hydroxide ions",
+      "correct_letter": "D",
+      "distractors": [
+        "combustion ions",
+        "calcium ions",
+        "monoxide ions"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The strength of a base depends on the concentration of hydroxide ions it produces when dissolved in water. For example, sodium hydroxide completely breaks down into ions in water, so it is a strong base. However, only a fraction of ammonia breaks down into ions, so it is a weak base.",
+        "The strength of a base depends on how many hydroxide ions it produces when it dissolves in water. A stronger base produces more hydroxide ions than a weaker base. For example, sodium hydroxide (NaOH), a base in drain cleaner, is a strong base because all of it breaks down into ions when it dissolves in water. Calcium carbonate (CaCO 3 ), a base in antacids, is a weak base because only a small percentage of it breaks down into ions in water."
+      ]
+    },
+    {
+      "id": 44,
+      "question": "The overall voltage of the battery is therefore the sum of ________ of the individual cells.",
+      "predicted": "voltages",
+      "correct_answer": "voltages",
+      "correct_letter": "B",
+      "distractors": [
+        "currents",
+        "resistances",
+        "weights"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "s of the reactants and the products do not change greatly as the battery is discharged; consequently, the output voltage remains remarkably constant during the discharge process. This behavior is in contrast to that of the Zn/Cu cell, whose output decreases logarithmically as the reaction proceeds (Figure 19.11 \"The Variation of \"). When a battery consists of more than one galvanic cell, the cells are usually connected in series\u2014that is, with the positive (+) terminal of one cell connected to the negative (\u2212) terminal of the next, and so forth. The overall voltage of the battery is therefore the sum of the voltages of the individual cells.",
+        "Multiple Voltage Sources There are two voltage sources when a battery charger is used. Voltage sources connected in series are relatively simple. When voltage sources are in series, their internal resistances add and their emfs add algebraically. (See Figure 21.15. ) Series connections of voltage sources are common\u2014for example, in flashlights, toys, and other appliances. Usually, the cells are in series in order to produce a larger total emf. But if the cells oppose one another, such as when one is put into an appliance backward, the total emf is less, since it is the algebraic sum of the individual emfs. A battery is a multiple connection of voltaic cells, as shown in Figure 21.16. The disadvantage of series connections of cells is that their internal resistances add. One of the authors once owned a 1957 MGA that had two 6-V batteries in series, rather than a single 12-V battery. This arrangement produced a large internal resistance that caused him many problems in starting the engine"
+      ]
+    },
+    {
+      "id": 45,
+      "question": "Organisms that live deep in the ocean must be able to withstand what?",
+      "predicted": "extreme water pressure",
+      "correct_answer": "extreme water pressure",
+      "correct_letter": "A",
+      "distractors": [
+        "the sun",
+        "significant water pressure",
+        "tsunamis"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.6666666666666666,
+      "sources": [
+        "There are few organisms that live in the deepest ocean. The ones that do have amazing adaptations to the exceptionally harsh conditions.",
+        "Organisms that live deep in the ocean must be able to withstand extreme water pressure, very cold water, and complete darkness. However, even here, thriving communities of living things can be found. Organisms cluster around hydrothermal vents in the ocean floor. The vents release hot water containing chemicals that would be toxic to most other living things. The producers among them are single-celled chemoautotrophs. They make food using energy stored in the chemicals. The tube worms in this chapter's opening photo depend on these chemoautotrophs for food."
+      ]
+    },
+    {
+      "id": 46,
+      "question": "Which system are the brain and spinal cord apart of?",
+      "predicted": "central nervous system",
+      "correct_answer": "central nervous system",
+      "correct_letter": "D",
+      "distractors": [
+        "large nervous system",
+        "cerebral cortex",
+        "limbic system"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The brain and spinal cord make up the central nervous system.",
+        "13.2 | The Central Nervous System By the end of this section, you will be able to: \u2022 Name the major regions of the adult brain \u2022 Describe the connections between the cerebrum and brain stem through the diencephalon, and from those regions into the spinal cord \u2022 Recognize the complex connections within the subcortical structures of the basal nuclei \u2022 Explain the arrangement of gray and white matter in the spinal cord The brain and the spinal cord are the central nervous system, and they represent the main organs of the nervous system. The spinal cord is a single structure, whereas the adult brain is described in terms of four major regions: the cerebrum, the diencephalon, the brain stem, and the cerebellum. A person\u2019s conscious experiences are based on neural activity in the brain. The regulation of homeostasis is governed by a specialized region in the brain. The coordination of reflexes depends on the integration of sensory and motor pathways in the spinal cord."
+      ]
+    },
+    {
+      "id": 47,
+      "question": "What are biochemical catalysts that speed up biochemical reactions?",
+      "predicted": "enzymes",
+      "correct_answer": "enzymes",
+      "correct_letter": "C",
+      "distractors": [
+        "inhibitor",
+        "metabolites",
+        "polymers"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "enzymes - proteins which speed up chemical reactions.",
+        "Most chemical reactions within organisms would be impossible under the normal conditions within cell. For example, the body temperature of most organisms is too low for reactions to occur quickly enough to carry out life processes. Reactants may also be present in such low concentrations that it is unlikely they will meet and collide. Therefore, the rate of most biochemical reactions must be increased by a catalyst. A catalyst is a chemical that speeds up chemical reactions. In organisms, catalysts are called enzymes ."
+      ]
+    },
+    {
+      "id": 48,
+      "question": "What process can cause harmful alleles to become fixed?",
+      "predicted": "genetic drift",
+      "correct_answer": "genetic drift",
+      "correct_letter": "C",
+      "distractors": [
+        "natural selection",
+        "migration",
+        "mutation"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "11.2 Mechanisms of Evolution There are four factors that can change the allele frequencies of a population. Natural selection works by selecting for alleles that confer beneficial traits or behaviors, while selecting against those for deleterious qualities. Mutations introduce new alleles into a population. Genetic drift stems from the chance occurrence that some individuals have more offspring than others and results in changes in allele frequencies that are random in direction. When individuals leave or join the population, allele frequencies can change as a result of gene flow.",
+        "There are four major forces of evolution that cause allele frequencies to change. They are mutation, gene flow, genetic drift, and natural selection."
+      ]
+    },
+    {
+      "id": 49,
+      "question": "What record shows that dinosaurs originated 200-250 million years ago?",
+      "predicted": "fossil record",
+      "correct_answer": "fossil record",
+      "correct_letter": "D",
+      "distractors": [
+        "ancient record",
+        "biological record",
+        "species record"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Birds are thought to have evolved from theropod dinosaurs around 150 million years ago. Their ancestor may have been similar to the extinct theropod Deinonychus, whose fossils convinced most scientists that birds evolved from dinosaurs. Scientist still don\u2019t know how or why wings and flight evolved, but they continue to search for answers.",
+        "There are many layers of rock in the Earth's surface. Newer layers form on top of the older layers; the deepest rock layers are the oldest. Therefore, you can tell how old a fossil is by observing in which layer of rock it was found. The fossils and the order in which fossils appear is called the fossil record . The fossil record provides evidence for when organisms lived on Earth, how species evolved, and how some species have gone extinct. Geologists use a method called radiometric dating to determine the exact age of rocks and fossils in each layer of rock. This technique, which is possible because radioactive materials decay at a known rate, measures how much of the radioactive materials in each rock layer have broken down ( Figure below )."
+      ]
+    },
+    {
+      "id": 50,
+      "question": "What instrument is used to make very sensitive mass measurements in a laboratory, usually in grams?",
+      "predicted": "analytical balance",
+      "correct_answer": "analytical balance",
+      "correct_letter": "A",
+      "distractors": [
+        "speedometer",
+        "thermometer",
+        "scale"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "An analytical balance makes very sensitive mass measurements in a laboratory, usually in grams.",
+        "To measure very small masses, scientists use electronic balances, like the one in the Figure below . This type of balance also makes it easier to make accurate measurements because mass is shown as a digital readout. In the picture, the balance is being used to measure the mass of a white powder on a plastic weighing tray. The mass of the tray alone would have to be measured first and then subtracted from the mass of the tray and powder together. The difference between the two masses is the mass of the powder alone."
+      ]
+    },
+    {
+      "id": 51,
+      "question": "What is the purpose of bright colors on a flower's petals?",
+      "predicted": "to attract pollinators",
+      "correct_answer": "to attract pollinators",
+      "correct_letter": "B",
+      "distractors": [
+        "to distract predators",
+        "to absorb light",
+        "to attract a mate"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "All of the petals ( Figure below ) together are called the corolla . They are bright and colorful to attract a particular pollinator , an animal that carries pollen from one flower to another. Examples of pollinators include birds and insects.",
+        "The showy petals of flowers evolved to help attract pollinators. Wind-blown pollen might land just anywhere and be wasted. A pollinator is an animal that picks up pollen on its body and carries it directly to another flower of the same species. This helps ensure that pollination occurs. Pollinators are usually small animals such as bees, butterflies, and bats. You can see an example in Figure below ."
+      ]
+    },
+    {
+      "id": 52,
+      "question": "Collateral ganglia controls organs in which cavity in the body?",
+      "predicted": "abdominal",
+      "correct_answer": "abdominal",
+      "correct_letter": "C",
+      "distractors": [
+        "cranial",
+        "pelvic",
+        "cardiac"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "e greater splanchnic nerve at the level of T5 synapses with a collateral ganglion outside the chain before making the connection to the postganglionic nerves that innervate the stomach (see Figure 15.3c). Collateral ganglia, also called prevertebral ganglia, are situated anterior to the vertebral column and receive inputs from splanchnic nerves as well as central sympathetic neurons. They are associated with controlling organs in the abdominal cavity, and are also considered part of the enteric nervous system. The three collateral ganglia are the celiac ganglion, the superior mesenteric ganglion, and the inferior mesenteric ganglion (see Figure 15.2). The word celiac is derived from the Latin word \u201ccoelom,\u201d which refers to a body cavity (in this case, the abdominal cavity), and the word mesenteric refers to the digestive system.",
+        "Parasympathetic Division of the Autonomic Nervous System The parasympathetic division of the autonomic nervous system is named because its central neurons are located on either side of the thoracolumbar region of the spinal cord (para- = \u201cbeside\u201d or \u201cnear\u201d). The parasympathetic system can also be referred to as the craniosacral system (or outflow) because the preganglionic neurons are located in nuclei of the brain stem and the lateral horn of the sacral spinal cord. The connections, or \u201ccircuits,\u201d of the parasympathetic division are similar to the general layout of the sympathetic division with a few specific differences (Figure 15.4). The preganglionic fibers from the cranial region travel in cranial nerves, whereas preganglionic fibers from the sacral region travel in spinal nerves. The targets of these fibers are terminal ganglia, which are located near\u2014or even within\u2014the target effector. These ganglia are often referred to as intramural ganglia when they are found within the walls"
+      ]
+    },
+    {
+      "id": 53,
+      "question": "A bee will sometimes do a dance to tell other bees in the hive where to find what?",
+      "predicted": "food",
+      "correct_answer": "food",
+      "correct_letter": "A",
+      "distractors": [
+        "enemies",
+        "water",
+        "honey"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "There are many other examples of innate behaviors. For example, did you know that honeybees dance? The honeybee pictured below has found a source of food ( Figure below ). When the bee returns to its hive, it will do a dance. This dance is called the waggle dance . The way the bee moves during its dance tells other bees in the hive where to find the food. Honeybees can do the waggle dance without learning it from other bees, so it is an innate behavior.",
+        "Living in a large colony requires good communication. Ants communicate with chemicals called pheromones. For example, an ant deposits pheromones on the ground as it returns to the nest from a food source. It is marking the path so other ants can find the food. Honeybees communicate by doing a \u201cwaggle dance. \u201d."
+      ]
+    },
+    {
+      "id": 54,
+      "question": "The lens focuses light on the retina , which covers the back of the inside of the eye. the retina has light-sensing photoreceptor cells called?",
+      "predicted": "rods and cones",
+      "correct_answer": "rods and cones",
+      "correct_letter": "A",
+      "distractors": [
+        "cones and tubes",
+        "holes and cones",
+        "tubes and rods"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The lens focuses light on the retina , which covers the back of the inside of the eye. The retina has light-sensing photoreceptor cells called rods and cones. Rods let us see in dim light. Cones let us detect light of different colors.",
+        "The back of the eye is covered by a thin layer called the retina. This is where the image of the object normally forms. The retina consists of special light-sensing cells called rods and cones. Rods sense dim light. Cones sense different colors of light."
+      ]
+    },
+    {
+      "id": 55,
+      "question": "Temperature, water, soil, and air are examples of nonliving factors of an ecosystem, also termed what?",
+      "predicted": "abiotic factors",
+      "correct_answer": "abiotic factors",
+      "correct_letter": "D",
+      "distractors": [
+        "nucleic factors",
+        "conditional factors",
+        "diverse factors"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Abiotic factors are the nonliving aspects of the environment. They include factors such as sunlight, soil, temperature, and water.",
+        "Abiotic factors are the nonliving parts of ecosystems. They include air, sunlight, soil, water, and minerals. These are all things that are needed for life. They determine which living things \u2014 and how many of them \u2014 an ecosystem can support. Figure below shows an ecosystem and its abiotic factors."
+      ]
+    },
+    {
+      "id": 56,
+      "question": "Ibuprofen and albuterol are examples of drugs whose _________ have different effects.",
+      "predicted": "enantiomers",
+      "correct_answer": "enantiomers",
+      "correct_letter": "D",
+      "distractors": [
+        "nanoparticles",
+        "misnomers",
+        "analogous"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Isotopes are atoms of the same element that have different masses.",
+        "Isomers that contain the same number of atoms of each kind but differ in which atoms are bonded to one another are called structural isomers. Isobutane and n-butane are examples of structural isomers. One kind of isomerism consists of two compounds that have the same empirical formula but differ in the number of formula units present in the molecular formula. An example in coordination compounds is two compounds with the empirical formula Pt(NH 3)2Cl2. One is a simple square planar platinum(II) complex, Pt(NH3)2Cl2, and the other is an ionic compound that contains the [Pt(NH 3)4]2+ cation and the [PtCl4]2\u2212 anion, [Pt(NH3)4][PtCl4]. As you might expect, these compounds have very different physical and chemical properties. One arrangement of the Cl\u2212 and NH3 ligands around the platinum ion in the former gives the anticancer drug cisplatin, whereas the other arrangement has no known biomedical applications."
+      ]
+    },
+    {
+      "id": 57,
+      "question": "Although magma once filled our moon's craters, what is thought to have ended there over a billion years ago?",
+      "predicted": "volcanic activity",
+      "correct_answer": "volcanic activity",
+      "correct_letter": "D",
+      "distractors": [
+        "mineral activity",
+        "oceanic activity",
+        "deserts activity"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "When you look at the Moon from Earth, you notice dark and light areas. The maria are dark, solid, flat areas of lava. Maria covers around 16% of the Moon\u2019s surface, mostly on the near side. The maria formed about 3.0 to 3.5 billion years ago, when the Moon was continually bombarded by meteorites ( Figure below ). Large meteorites broke through the Moon\u2019s newly formed surface. This caused magma to flow out and fill the craters. Scientists estimate volcanic activity on the Moon ended about 1.2 billion years ago.",
+        "When you look at the Moon from Earth, you notice dark and light areas. The maria are dark, solid, flat areas of lava (mostly basalt). Maria covers around 16% of the Moon\u2019s surface, mostly on the near side. The maria formed about 3.0 to 4.0 billion years ago, when the Moon was continually bombarded by meteoroids ( Figure below ). Large meteorites broke through the Moon\u2019s newly formed surface. This eventually caused magma to flow out and fill the craters. Scientists estimate volcanic activity on the Moon ended about 1.2 billion years ago."
+      ]
+    },
+    {
+      "id": 58,
+      "question": "Sensory nerves carry nerve impulses from sensory receptors to what system?",
+      "predicted": "central nervous",
+      "correct_answer": "central nervous",
+      "correct_letter": "C",
+      "distractors": [
+        "MUSCULAR SYSTEM",
+        "ENDOCRINE SYSTEM",
+        "IRCULATORY SYSTEM"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Sensory neurons carry nerve impulses from sense organs and internal organs to the central nervous system.",
+        "Sensory neurons carry nerve impulses from tissues and organs to the spinal cord and brain."
+      ]
+    },
+    {
+      "id": 59,
+      "question": "Which kind of muscle regulates air flow in lungs?",
+      "predicted": "smooth",
+      "correct_answer": "smooth",
+      "correct_letter": "C",
+      "distractors": [
+        "vascular",
+        "striated",
+        "alveoli"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Smooth muscle regulates air flow in lungs.",
+        "How do lungs allow air in? Air moves into and out of the lungs by the movement of muscles. The most important muscle in the process of breathing is the diaphragm , a sheet of muscle that spreads across the bottom of the rib cage. The diaphragm and rib muscles contract and relax to move air into and out of the lungs. During inhalation, the diaphragm contracts and moves downward. The rib muscles contract and cause the ribs to move outward. This causes the chest volume to increase. Because the chest volume is larger, the air pressure inside the lungs is lower than the air pressure outside. This difference in air pressures causes air to be sucked into the lungs. When the diaphragm and rib muscles relax, air is pushed out of the lungs. Exhalation is similar to letting the air out of a balloon."
+      ]
+    },
+    {
+      "id": 60,
+      "question": "What type of bonds are formed by the side-to-side overlap of p orbitals?",
+      "predicted": "pi bonds",
+      "correct_answer": "pi bonds",
+      "correct_letter": "B",
+      "distractors": [
+        "sigma bonds",
+        "omega bonds",
+        "theta bonds"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Sigma bonds are formed by the end-to-end overlap of bonding orbitals. Pi bonds are formed by the side-to-side overlap of p orbitals. Single bonds are normally sigma bonds. A double or triple bond consists of one sigma bond and either one or two pi bonds.",
+        "It is necessary to distinguish between the two types of covalent bonds in a C 2 H 4 molecule. A sigma bond (\u03c3 bond) is a bond formed by the overlap of orbitals in an end-to-end fashion, with the electron density concentrated between the nuclei of the bonding atoms. A pi bond (\u03c0 bond) is a bond formed by the overlap of orbitals in a side-by-side fashion, with the electron density concentrated above and below the plane of the nuclei of the bonding atoms. Figure below shows the two types of bonding in C 2 H 4 . The sp 2 hybrid orbitals are orange and the p z orbital is green. Three sigma bonds are formed by each carbon atom with its hybrid orbitals. The pi bond is the \u201csecond\u201d bond of the double bond between the carbon atoms and is shown as an elongated blue lobe that extends both above and below the plane of the molecule, which contains the six atoms and all of the sigma bonds."
+      ]
+    },
+    {
+      "id": 61,
+      "question": "On what day of the cycle does ovulation usually occur?",
+      "predicted": "14th",
+      "correct_answer": "14th",
+      "correct_letter": "C",
+      "distractors": [
+        "17th",
+        "7th",
+        "1st"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Figure 27.15 Hormone Levels in Ovarian and Menstrual Cycles The correlation of the hormone levels and their effects on the female reproductive system is shown in this timeline of the ovarian and menstrual cycles. The menstrual cycle begins at day one with the start of menses. Ovulation occurs around day 14 of a 28-day cycle, triggered by the LH surge.",
+        "Ovulation, the release of an egg from the ovary, occurs at about the midpoint of the cycle. This would be around day 14 of a 28 day cycle. The egg is swept into the fallopian tube. If sperm is present, fertilization may occur. As sperm can only survive in the fallopian tube for up to a few days, fertilization can only occur within those few days post-ovulation."
+      ]
+    },
+    {
+      "id": 62,
+      "question": "The majority of animals belong to what category, characterized by the lack of a backbone?",
+      "predicted": "invertebrate",
+      "correct_answer": "invertebrate",
+      "correct_letter": "C",
+      "distractors": [
+        "vertebrate",
+        "nematode",
+        "arthropod"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": true,
+      "adherence": 1.0,
+      "sources": [
+        "The majority of living animals are invertebrates. Invertebrates lack a backbone.",
+        "Invertebrates are animals that lack a vertebral column, or backbone. All the phyla in Table above , except the Phylum Chordata, consist only of invertebrates. Even the Phylum Chordata includes some invertebrate taxa. Invertebrates make up about 95 percent of all animal species."
+      ]
+    },
+    {
+      "id": 63,
+      "question": "What is another name for the vertebral column?",
+      "predicted": "backbone",
+      "correct_answer": "backbone",
+      "correct_letter": "A",
+      "distractors": [
+        "nerve column",
+        "pillar",
+        "brain stem"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "animal in Phylum Chordata that has a vertebral column, or backbone.",
+        "24.4 Subphylum Vertebrata (Vertebra from Latin vertere, to turn). Characterized by separate bones or cartilage blocks firmly joined as a backbone. The backbone supports and protects a dorsal nerve cord. Vertebrates have tissues which are organized into organs which in turn are organized into organ systems. All vertebrates share the following characteristics: - segmentation - a true coelom - bilateral symmetry - cephalization - a backbone - a bony skull - a closed circulatory system - chambered heart - two pairs of jointed appendages - tissues organized into organs Vertebrate Organ Systems: - Nervous System - Circulatory System - Digestive System Respiratory System - Reproductive System - Excretory System \u2022 Vertebral column: Not present in higher vertebrate adults. (In humans, the gel-like, spongy core of the vertebral column is the only remainder. Ruptured or herniated disc is an injury to this. ) \u2022 Cranium: Composite structure of bone/cartilage. Two functions: 1. Supports sensory orga"
+      ]
+    },
+    {
+      "id": 64,
+      "question": "The temperature at which a substance melts is called its what point?",
+      "predicted": "melting",
+      "correct_answer": "melting",
+      "correct_letter": "C",
+      "distractors": [
+        "boiling",
+        "change",
+        "freezing"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The melting point is the temperature at which a solid changes into a liquid.",
+        "The temperature at which a substance melts is called its melting point. The melting point of ice is 0\u00b0C."
+      ]
+    },
+    {
+      "id": 65,
+      "question": "Oogenesis, which is gametogenesis in females, begins with what type of ste cells?",
+      "predicted": "ovarian",
+      "correct_answer": "ovarian",
+      "correct_letter": "A",
+      "distractors": [
+        "secretion",
+        "digestive",
+        "uterian"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Oogenesis Gametogenesis in females is called oogenesis. The process begins with the ovarian stem cells, or oogonia (Figure 27.11). Oogonia are formed during fetal development, and divide via mitosis, much like spermatogonia in the testis. Unlike spermatogonia, however, oogonia form primary oocytes in the fetal ovary prior to birth. These primary oocytes are then arrested in this stage of meiosis I, only to resume it years later, beginning at puberty and continuing until the woman is near menopause (the cessation of a woman\u2019s reproductive functions). The number of primary oocytes present in the ovaries declines from one to two million in an infant, to approximately 400,000 at puberty, to zero by the end of menopause. The initiation of ovulation\u2014the release of an oocyte from the ovary\u2014marks the transition from puberty into reproductive maturity for women. From then on, throughout a woman\u2019s reproductive years, ovulation occurs approximately once every 28 days. Just prior to ovulation, a s",
+        "27.2 | Anatomy and Physiology of the Female Reproductive System By the end of this section, you will be able to: \u2022 Describe the structure and function of the organs of the female reproductive system \u2022 List the steps of oogenesis \u2022 Describe the hormonal changes that occur during the ovarian and menstrual cycles \u2022 Trace the path of an oocyte from ovary to fertilization The female reproductive system functions to produce gametes and reproductive hormones, just like the male reproductive system; however, it also has the additional task of supporting the developing fetus and delivering it to the outside world. Unlike its male counterpart, the female reproductive system is located primarily inside the pelvic cavity (Figure 27.9). Recall that the ovaries are the female gonads. The gamete they produce is called an oocyte. We\u2019ll discuss the production of oocytes in detail shortly. First, let\u2019s look at some of the structures of the female reproductive system."
+      ]
+    },
+    {
+      "id": 66,
+      "question": "Humans are among the most versatile of mammals with what type of diet?",
+      "predicted": "omnivore",
+      "correct_answer": "omnivore",
+      "correct_letter": "D",
+      "distractors": [
+        "carnivore",
+        "herbivore",
+        "vegetarian"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Mammals may be herbivores, carnivores, or omnivores. They have four types of teeth, so they can eat a wide range of foods.",
+        "Some mammals are omnivores. Omnivores are heterotrophs that eat a mix of plant and animal foods. Mammals that are omnivores include bears, foxes, rats, pigs, and human beings. The chimpanzees in Figure below are also omnivorous mammals. In the wild, they eat mainly plant foods, but they supplement plants with birds, bird eggs, insects, small monkeys, and other small mammals. Their favorite and most common food, however, is fruit. Animals that eat mainly fruit are called frugivores."
+      ]
+    },
+    {
+      "id": 67,
+      "question": "Solute potential is also called osmotic potential because solutes affect the direction of what?",
+      "predicted": "osmosis",
+      "correct_answer": "osmosis",
+      "correct_letter": "D",
+      "distractors": [
+        "permeability",
+        "electrolysis",
+        "electrolysis"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Osmosis and Osmotic Pressure of Solutions A number of natural and synthetic materials exhibit selective permeation, meaning that only molecules or ions of a certain size, shape, polarity, charge, and so forth, are capable of passing through (permeating) the material. Biological cell membranes provide elegant examples of selective permeation in nature, while dialysis tubing used to remove metabolic wastes from blood is a more simplistic technological example. Regardless of how they may be fabricated, these materials are generally referred to as semipermeable membranes. Consider the apparatus illustrated in Figure 11.25, in which samples of pure solvent and a solution are separated by a membrane that only solvent molecules may permeate. Solvent molecules will diffuse across the membrane in both directions. Since the concentration of solvent is greater in the pure solvent than the solution, these molecules will diffuse from the solvent side of the membrane to the solution side at a faster",
+        "Osmotic Pressure The net pressure that drives reabsorption\u2014the movement of fluid from the interstitial fluid back into the capillaries\u2014is called osmotic pressure (sometimes referred to as oncotic pressure). Whereas hydrostatic pressure forces fluid out of the capillary, osmotic pressure draws fluid back in. Osmotic pressure is determined by osmotic concentration gradients, that is, the difference in the solute-to-water concentrations in the blood and tissue fluid. A region higher in solute concentration (and lower in water concentration) draws water across a semipermeable membrane from a region higher in water concentration (and lower in solute concentration). As we discuss osmotic pressure in blood and tissue fluid, it is important to recognize that the formed elements of blood do not contribute to osmotic concentration gradients. Rather, it is the plasma proteins that play the key role. Solutes also move across the capillary wall according to their concentration gradient, but overall"
+      ]
+    },
+    {
+      "id": 68,
+      "question": "Newton\u2019s second law of what is more than a definition; it is a relationship among acceleration, force, and mass?",
+      "predicted": "motion",
+      "correct_answer": "motion",
+      "correct_letter": "B",
+      "distractors": [
+        "gravity",
+        "change",
+        "interference"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Newton\u2019s second law shows that there is a direct relationship between force and acceleration. The greater the force that is applied to an object of a given mass, the more the object will accelerate. For example, doubling the force on the object doubles its acceleration. The relationship between mass and acceleration, on the other hand, is an inverse relationship. The greater the mass of an object, the less it will accelerate when a given force is applied. For example, doubling the mass of an object results in only half as much acceleration for the same amount of force.",
+        "Newton\u2019s second law shows that there is a direct relationship between force and acceleration. The greater the force that is applied to an object of a given mass, the more the object will accelerate. For example, doubling the force on the object doubles its acceleration."
+      ]
+    },
+    {
+      "id": 69,
+      "question": "What is the physical transformation of an insect moving through stages of life?",
+      "predicted": "metamorphosis",
+      "correct_answer": "metamorphosis",
+      "correct_letter": "D",
+      "distractors": [
+        "Transition",
+        "Growth and Development",
+        "parthenogenesis"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "With a few exceptions, all insect life begins as an egg. After leaving the egg, insects must grow and transform until reaching adulthood. Only the adult insect can mate and reproduce. The physical transformation of an insect from one stage of its life cycle to another is known as metamorphosis .",
+        "When an insect egg hatches, a larva emerges. The larva eats and grows and then enters the pupa stage. The pupa is immobile and may be encased in a cocoon . During the pupa stage, the insect goes through metamorphosis . Tissues and appendages of the larva break down and reorganize into the adult form. How did such an incredible transformation evolve? Metamorphosis is actually very advantageous. It allows functions to be divided between life stages. Each stage can evolve adaptations to suit it for its specific functions without affecting the adaptations of the other stage."
+      ]
+    },
+    {
+      "id": 70,
+      "question": "When equal amounts of a strong acid such as hydrochloric acid are mixed with a strong base such as sodium hydroxide, the result is what kind of solution?",
+      "predicted": "a neutral one",
+      "correct_answer": "a neutral one",
+      "correct_letter": "D",
+      "distractors": [
+        "a economical one",
+        "a lateral one",
+        "a thermodynamic one"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "When equal amounts of a strong acid such as hydrochloric acid are mixed with a strong base such as sodium hydroxide, the result is a neutral solution. The products of the reaction do not have the characteristics of either an acid or a base. Here is the balanced molecular equation.",
+        "The simplest situation is a salt formed by combining a strong acid and a strong base. These salts are neither acidic nor basic, so they do not affect the pH of the solution when dissolved in water. For example, the ionic compound NaNO 3 could be prepared by combining the strong acid HNO 3 and the strong base NaOH. If we were to dissolve NaNO 3 in water, it would dissociate into Na + and NO 3 - ions. Neither ion is a strong enough acid or base to cause any noticeable proton transfers, so the pH of the pure water is not altered."
+      ]
+    },
+    {
+      "id": 71,
+      "question": "What are fast moving rivers of air that are going in opposite directions called?",
+      "predicted": "jet streams",
+      "correct_answer": "jet streams",
+      "correct_letter": "B",
+      "distractors": [
+        "air streams",
+        "cause streams",
+        "burst streams"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Jet streams are fast moving rivers of air going in opposite directions.",
+        "Currents are like rivers flowing through the ocean. Rivers always flow downhill because of gravity. What do you think causes ocean currents to flow?."
+      ]
+    },
+    {
+      "id": 72,
+      "question": "Nephrons, renal tubules and the loop of henle are part of the process of blood filtration by what organs?",
+      "predicted": "kidneys",
+      "correct_answer": "kidneys",
+      "correct_letter": "D",
+      "distractors": [
+        "bladder",
+        "lungs",
+        "liver"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Kidney Function and Physiology Kidneys filter blood in a three-step process. First, the nephrons filter blood that runs through the capillary network in the glomerulus. Almost all solutes, except for proteins, are filtered out into the glomerulus by a process called glomerular filtration. Second, the filtrate is collected in the renal tubules. Most of the solutes get reabsorbed in the PCT by a process called tubular reabsorption. In the loop of Henle, the filtrate continues to exchange solutes and water with the renal medulla and the peritubular capillary network. Water is also reabsorbed during this step. Then, additional solutes and wastes are secreted into the kidney tubules during tubular secretion, which is, in essence, the opposite process to tubular reabsorption. The collecting ducts collect filtrate coming from the nephrons and fuse in the medullary papillae. From here, the papillae deliver the filtrate, now called urine, into the minor calyces that eventually connect to the ur",
+        "blood containing the metabolic wastes from cells. All the blood in the human body is filtered about 60 times a day by the kidneys. The nephrons remove wastes, concentrate them, and form urine that is collected in the bladder. Internally, the kidney has three regions\u2014an outer cortex, a medulla in the middle, and the renal pelvis, which is the expanded end of the ureter. The renal cortex contains the nephrons\u2014the functional unit of the kidney. The renal pelvis collects the urine and leads to the ureter on the outside of the kidney. The ureters are urine-bearing tubes that exit the kidney and empty into the urinary bladder."
+      ]
+    },
+    {
+      "id": 73,
+      "question": "Fungi, such as black bread mold (rhizopus nigricans), have haploid-dominant what?",
+      "predicted": "life cycles",
+      "correct_answer": "life cycles",
+      "correct_letter": "C",
+      "distractors": [
+        "birth cycles",
+        "gene pools",
+        "mutations"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.5,
+      "sources": [
+        "Figure 11.9 Fungi, such as black bread mold (Rhizopus nigricans), have haploid-dominant life cycles. The haploid multicellular stage produces specialized haploid cells by mitosis that fuse to form a diploid zygote. The zygote undergoes meiosis to produce haploid spores. Each spore gives rise to a multicellular haploid organism by mitosis. (credit \u201czygomycota\u201d micrograph: modification of work by \u201cFanaberka\u201d/Wikimedia Commons).",
+        "During asexual reproduction, fungi produce haploid spores by mitosis of a haploid parent cell. A haploid cell has just one of each pair of chromosomes. The haploid spores are genetically identical to the parent cell. Spores may be spread by moving water, wind, or other organisms. Wherever the spores land, they will develop into new hyphae only when conditions are suitable for growth."
+      ]
+    },
+    {
+      "id": 74,
+      "question": "The electrode at which oxidation occurs is called?",
+      "predicted": "the anode",
+      "correct_answer": "the anode",
+      "correct_letter": "D",
+      "distractors": [
+        "diode",
+        "cathode",
+        "calomel"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The electrode at which oxidation occurs is called the anode . The zinc anode gradually diminishes as the cell operates due to the loss of zinc metal. The zinc ion concentration in the half-cell increases. Because of the production of electrons at the anode, it is labeled as the negative electrode.",
+        "These values suggest that water should be oxidized at the anode because a smaller potential would be needed\u2014using reaction (ii) for the oxidation would give a less-negative cell potential. When the experiment is run, it turns out chlorine, not oxygen, is produced at the anode. The unexpected process is so common in electrochemistry that it has been given the name overpotential. The overpotential is the difference between the theoretical cell voltage and the actual voltage that is necessary to cause electrolysis. It turns out that the overpotential for oxygen is rather high and effectively makes the reduction potential more positive. As a result, under normal conditions, chlorine gas is what actually forms at the anode. Now consider the cathode. Three reductions could occur:."
+      ]
+    },
+    {
+      "id": 75,
+      "question": "There are about 6200 known species of what?",
+      "predicted": "amphibians",
+      "correct_answer": "amphibians",
+      "correct_letter": "A",
+      "distractors": [
+        "primates",
+        "mammals",
+        "reptiles"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "There are only about 6200 known species of amphibians. They are placed in three orders: frogs, salamanders, and caecilians. Table below shows a picture of an amphibian in each order. It also provides additional information about the orders.",
+        "There are about 6,200 known species of living amphibians. They are classified into three orders: frogs and toads, salamanders and newts, and caecilians."
+      ]
+    },
+    {
+      "id": 76,
+      "question": "The lens and other parts of the eye work together to focus a real image on what eye structure?",
+      "predicted": "retina",
+      "correct_answer": "retina",
+      "correct_letter": "A",
+      "distractors": [
+        "iris",
+        "pupil",
+        "cornea"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "After passing into the eye through the pupil, light passes through the lens. The lens of the eye is a clear, curved structure. Along with the cornea, the lens helps focus light at the back of the eye. This is pictured below ( Figure below ).",
+        "Anatomy of the Eye The photoreceptive cells of the eye, where transduction of light to nervous impulses occurs, are located in the retina (shown in Figure 36.17) on the inner surface of the back of the eye. But light does not impinge on the retina unaltered. It passes through other layers that process it so that it can be interpreted by the retina (Figure 36.17b). The cornea, the front transparent layer of the eye, and the crystalline lens, a transparent convex structure behind the cornea, both refract (bend) light to focus the image on the retina. The iris, which is conspicuous as the colored part of the eye, is a circular muscular ring lying between the lens and cornea that regulates the amount of light entering the eye. In conditions of high ambient light, the iris contracts, reducing the size of the pupil at its center. In conditions of low light, the iris relaxes and the pupil enlarges."
+      ]
+    },
+    {
+      "id": 77,
+      "question": "What is required to move or change matter from one state to another?",
+      "predicted": "energy",
+      "correct_answer": "energy",
+      "correct_letter": "B",
+      "distractors": [
+        "food",
+        "gravity",
+        "evolution"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Energy is the ability to change or move matter. All life processes require energy, so all living things need energy.",
+        "A change of state occurs whenever matter changes from one state to another. Changes of state are physical changes in matter. They are reversible changes that do not change matter\u2019s chemical makeup or chemical properties."
+      ]
+    },
+    {
+      "id": 78,
+      "question": "A food web can be broken up into what further subdivision that usually has a few links in it?",
+      "predicted": "food chain",
+      "correct_answer": "food chain",
+      "correct_letter": "C",
+      "distractors": [
+        "food pyramid",
+        "oxygen chain",
+        "water chain"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Food Chains and Food Webs A food chain is a linear sequence of organisms through which nutrients and energy pass as one organism eats another; the levels in the food chain are producers, primary consumers, higher-level consumers, and finally decomposers. These levels are used to describe ecosystem structure and dynamics. There is a single path through a food chain. Each organism in a food chain occupies a specific trophic level (energy level), its position in the food chain or food web. In many ecosystems, the base, or foundation, of the food chain consists of photosynthetic organisms (plants or phytoplankton), which are called producers. The organisms that consume the producers are herbivores: the primary consumers. Secondary consumers are usually carnivores that eat the primary consumers. Tertiary consumers are carnivores that eat other carnivores. Higher-level consumers feed on the next lower trophic levels, and so on, up to the organisms at the top of the food chain: the apex consu",
+        "Each food chain or food web has organisms at different trophic levels. A trophic level is a feeding position in a food chain or web. The trophic levels are identified in the food web in Figure above . All food chains and webs have at least two or three trophic levels, but they rarely have more than four trophic levels. The trophic levels are:."
+      ]
+    },
+    {
+      "id": 79,
+      "question": "What living species of bird is considered the  largest of the raptors?",
+      "predicted": "golden eagles",
+      "correct_answer": "golden eagles",
+      "correct_letter": "A",
+      "distractors": [
+        "California condor",
+        "peregrine falcon",
+        "pteradactyl"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Although not as famous as its bald cousin, Golden Eagles are much easier to find in Northern California - one of the largest breeding populations for Golden Eagles. The largest of the raptors, Golden Eagles weigh typically between 8 and 12 pounds, and their wing span is around 6 to 7 feet. These eagles dive towards earth to catch prey, and can reach speeds of up to 200 mph! Meet one of the largest birds of prey at http://www. kqed. org/quest/television/cool-critters-the-golden-eagle .",
+        "Waterfowl are birds that live on the water. These include ducks, geese, swans, and pelicans, to name a few. Landfowl are ground-feeding birds such as chickens and turkeys. Penguins are a group of flightless birds adapted for life in the water with flippers. Diurnal raptors are birds of prey that hunt during the day. These include falcons, eagles and hawks. Nocturnal raptors hunt during the night. These include various types of owls. Parrots are brightly colored and very intelligent. They are found in the tropics and include cockatoos, parrots, and parakeets."
+      ]
+    },
+    {
+      "id": 80,
+      "question": "What contains positive protons and neutral neutrons?",
+      "predicted": "nucleus",
+      "correct_answer": "nucleus",
+      "correct_letter": "A",
+      "distractors": [
+        "electrons",
+        "ions",
+        "epidermis"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Protons and neutrons are located in a central nucleus, while electrons orbit about the nucleus.",
+        "Atoms, which are always neutral in electric charge, contain electrons as well as protons and neutrons. An electron has an electrical charge of -1. If an atom has three electrons, infer how many protons it has."
+      ]
+    },
+    {
+      "id": 81,
+      "question": "Horny ridges on the jaws serve the same function as what, for turtles?",
+      "predicted": "teeth",
+      "correct_answer": "teeth",
+      "correct_letter": "A",
+      "distractors": [
+        "skin",
+        "taste buds",
+        "hairs"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Turtles may appear slow and harmless when they are out of the water, but in the water is another story. Turtles can be either herbivores or carnivores, with most sea turtles carnivorous . Turtles have a rigid beak and use their jaws to cut and chew food. Instead of teeth, the upper and lower jaws of the turtle are covered by horny ridges. Carnivorous, or animal-eating turtles usually have knife-sharp ridges for slicing through their prey. But as the turtle is not a very fast animal, and it cannot quickly turn its head to snap at prey, it does have some limitations. Sea turtles typically feed on jellyfish, sponges and other soft-bodied organisms. Some species of sea turtle with stronger jaws eat shellfish, while other species, such as the green sea turtle, do not eat any meat at all. Herbivorous turtles have serrated ridges that help them cut through tough plants.",
+        "Most turtle bodies are covered by a special bony or cartilaginous shell developed from their ribs."
+      ]
+    },
+    {
+      "id": 82,
+      "question": "Natural gas is the predominately made up of?",
+      "predicted": "methane",
+      "correct_answer": "methane",
+      "correct_letter": "A",
+      "distractors": [
+        "hydrogen",
+        "carbon",
+        "sulfur"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The fuel that burns in a combustion reaction is often a substance called a hydrocarbon. A hydrocarbon is a compound that contains only carbon (C) and hydrogen (H). Fossil fuels, such as natural gas, consist of hydrocarbons. Natural gas is a fuel that is commonly used in home furnaces and gas stoves (see Figure below ). The main component of natural gas is the hydrocarbon called methane (CH 4 ). The combustion of methane is represented by the equation:.",
+        "Natural gas is mostly methane. Natural gas is usually found with petroleum. People prefer to burn natural gas when possible because it is relatively clean."
+      ]
+    },
+    {
+      "id": 83,
+      "question": "Which  organs control the amount of water, ions, and other substances in the blood by excreting more or less of them in urine?",
+      "predicted": "kidneys",
+      "correct_answer": "kidneys",
+      "correct_letter": "B",
+      "distractors": [
+        "lungs",
+        "tongue",
+        "ears"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The boy in Figure below is working out on a hot day. He\u2019s losing a lot of water in sweat. To maintain homeostasis, his body can balance the water lost in sweat by excreting less water in urine. The amount of water lost in urine is controlled by the kidneys. The kidneys are organs of excretion.",
+        "Excretion is the process of removing wastes and excess water from the body. It is one of the major ways the body maintains homeostasis. Although the kidneys are the main organs of excretion, several other organs also excrete wastes. They include the large intestine, liver, skin, and lungs. All of these organs of excretion, along with the kidneys, make up the excretory system . This lesson focuses on the role of the kidneys in excretion. The roles of the other excretory organs are summarized below:."
+      ]
+    },
+    {
+      "id": 84,
+      "question": "What unit of measurement is defined to be the number of atoms in 12g of carbon-12?",
+      "predicted": "one mole",
+      "correct_answer": "one mole",
+      "correct_letter": "C",
+      "distractors": [
+        "one quark",
+        "one joule",
+        "one ohm"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The relative scale of atomic masses in amu is also a relative scale of masses in grams. We said before that the mole is officially equal to the number of carbon atoms in exactly 12 g of carbon-12. In other words, one carbon-12 atom has a mass of exactly 12 amu, and one mole of carbon atoms has a mass of exactly 12 grams. This relationship is true for all substances. If one atom of helium has a mass of 4.00 amu, one mole of helium atoms has a mass of 4.00 g. One molecule of water has a mass of 18.0 amu, so one mole of water molecules has a mass of 18.0 grams. Molar mass is defined as the mass of one mole of representative particles of a substance. It is expressed in units of grams per mole (g/mol).",
+        "E XA MP L E 1 1. The most common carbon atoms have six protons and six neutrons in their nuclei. What are the atomic number and the mass number of these carbon atoms?."
+      ]
+    },
+    {
+      "id": 85,
+      "question": "What involves sensing and focusing light from people and objects?",
+      "predicted": "vision",
+      "correct_answer": "vision",
+      "correct_letter": "B",
+      "distractors": [
+        "echolocation",
+        "sensory perception",
+        "projection"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Vision involves sensing and focusing light from people and objects. The steps involved are as follows:.",
+        "The human eye can detect only three colors of light. What three colors are they? How can we perceive other colors of light?."
+      ]
+    },
+    {
+      "id": 86,
+      "question": "What is a therian mammal in which the embryo is born at an early, immature stage?",
+      "predicted": "a marsupial",
+      "correct_answer": "a marsupial",
+      "correct_letter": "D",
+      "distractors": [
+        "rodent",
+        "bat",
+        "carnivore"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Marsupials have a different way of reproducing that reduces the mother\u2019s risks. A marsupial is a therian mammal in which the embryo is born at an early, immature stage. The embryo completes its development outside the mother\u2019s body in a pouch on her belly. Only a minority of therian mammals are marsupials. They live mainly in Australia. Examples of marsupials are pictured in Figure below .",
+        "Most mammals are viviparous. Their young are born live. They are born either as relatively large, well-developed fetuses or as tiny, immature embryos. Mammals that are viviparous are called therian mammals . Only a few mammals lay eggs instead of giving birth to an infant or embryo."
+      ]
+    },
+    {
+      "id": 87,
+      "question": "What are fungi which feed on living cells called?",
+      "predicted": "parasitic",
+      "correct_answer": "parasitic",
+      "correct_letter": "B",
+      "distractors": [
+        "static",
+        "predatory",
+        "symbiotic"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "23.24 Nutrition Fungi are saprophytes. When they find a source of food (e. dead wood, orange peel) , they decompose it and digest it. The enzymes break down larger organic molecules in the substrate into smaller molecules. These smaller molecules diffuse into the fungus, where they are used to allow growth and repair. Fungi which feed on living cells are parasitic. For example, athlete's foot grows on the human foot. These kinds of fungi produce hyphae called haustoria, which can penetrate host cells without immediately killing them. However, they are friendlier species of fungi. Many fungi live symbiotically with plants or animals. For example, most trees have fungi living in close contact with their roots. In this relationship, known as a mycorrhiza, there are many benefits: \u2022 Growing around the plant roots and often entering plant cells, the hyphae absorb minerals from the soil and release them in the roots. The fungi gets its source of food (organic nutrients) while delivering food",
+        "They live mutualistically with other organisms. Mutualistic fungi live harmlessly with other living organisms. Recall that mutualism is an interaction between individuals of two different species, in which both individuals benefit."
+      ]
+    },
+    {
+      "id": 88,
+      "question": "What rock group offers the richest source of fossils?",
+      "predicted": "sedimentary",
+      "correct_answer": "sedimentary",
+      "correct_letter": "C",
+      "distractors": [
+        "metamorphic",
+        "igneous",
+        "geode"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Fossils are preserved remains or traces of organisms that lived in the past. Most fossils form in sedimentary rock. Fossils can also be preserved in other ways. Fossilization is rare. It\u2019s very unlikely for any given organism to become a fossil.",
+        "The process by which remains or traces of living things become fossils is called fossilization ( Figure below ). Most fossils are preserved in sedimentary rocks."
+      ]
+    },
+    {
+      "id": 89,
+      "question": "What is the diffusion of water through a semipermeable membrane down its concentration gradient",
+      "predicted": "osmosis",
+      "correct_answer": "osmosis",
+      "correct_letter": "D",
+      "distractors": [
+        "nutrients",
+        "mirrors",
+        "Permable"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Figure 3.7 Osmosis Osmosis is the diffusion of water through a semipermeable membrane down its concentration gradient. If a membrane is permeable to water, though not to a solute, water will equalize its own concentration by diffusing to the side of lower water concentration (and thus the side of higher solute concentration). In the beaker on the left, the solution on the right side of the membrane is hypertonic.",
+        "Osmosis Osmosis is the diffusion of water through a semipermeable membrane according to the concentration gradient of water across the membrane. Whereas diffusion transports material across membranes and within cells, osmosis transports only water across a membrane and the membrane limits the diffusion of solutes in the water. Osmosis is a special case of diffusion. Water, like other substances, moves from an area of higher concentration to one of lower concentration. Imagine a beaker with a semipermeable membrane, separating the two sides or halves (Figure 3.21). On both sides of the membrane, the water level is the same, but there are different concentrations on each side of a dissolved substance, or solute, that cannot cross the membrane. If the volume of the water is the same, but the concentrations of solute are different, then there are also different concentrations of water, the solvent, on either side of the membrane."
+      ]
+    },
+    {
+      "id": 90,
+      "question": "Isotopes are named for their number of protons plus what?",
+      "predicted": "neutrons",
+      "correct_answer": "neutrons",
+      "correct_letter": "B",
+      "distractors": [
+        "isomers",
+        "electrons",
+        "nuclei"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Isotopes are named for their number of protons plus neutrons. If a carbon atom had 7 neutrons, what would it be named?.",
+        "Isotopes are named for their number of protons plus neutrons. If a carbon atom had seven neutrons, what would it be named?."
+      ]
+    },
+    {
+      "id": 91,
+      "question": "Movements in the mantle cause the plates to move over time in a process called what?",
+      "predicted": "continental drift",
+      "correct_answer": "continental drift",
+      "correct_letter": "D",
+      "distractors": [
+        "continental expansion",
+        "continental shift",
+        "boundary drift"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Convection within the Earth\u2019s mantle causes the plates to move. Mantle material is heated above the core. The hot mantle rises up towards the surface ( Figure below ). As the mantle rises it cools. At the surface the material moves horizontally away from a mid-ocean ridge crest. The material continues to cool. It sinks back down into the mantle at a deep sea trench. The material sinks back down to the core. It moves horizontally again, completing a convection cell.",
+        "Convection in the mantle drives the movement of the plates of lithosphere over the Earth\u2019s surface. New oceanic crust forms at the ridge and pushes the older seafloor away from the ridge horizontally."
+      ]
+    },
+    {
+      "id": 92,
+      "question": "In phyisics, what is considered to be the rotational version of force?",
+      "predicted": "torque",
+      "correct_answer": "torque",
+      "correct_letter": "A",
+      "distractors": [
+        "work",
+        "energy",
+        "pressure"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The magnitude, direction, and point of application of the force are incorporated into the definition of the physical quantity called torque. Torque is the rotational equivalent of a force. It is a measure of the effectiveness of a force in changing or accelerating a rotation (changing the angular velocity over a period of time). In equation form, the magnitude of torque is defined to be.",
+        "Torque is equal to the cross product as stated above. In general, one can simplify by saying that the torque is equal to the force acting on the object multiplied by the perpendicular distance from the application of the force to the rotational axis. Say you had a seesaw. It is easier to exert torque, get the seesaw to move, if you pushed on the board near the end rather than near the middle. It is the rotational version of Force."
+      ]
+    },
+    {
+      "id": 93,
+      "question": "Skeletal muscles are attached to the skeleton by tough connective tissues called what?",
+      "predicted": "tendons",
+      "correct_answer": "tendons",
+      "correct_letter": "A",
+      "distractors": [
+        "fibers",
+        "veins",
+        "cords"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Skeletal muscles are attached to bones by tendons.",
+        "Skeletal muscles are attached to the skeleton by tough connective tissues called tendons (see Figure above ). Many skeletal muscles are attached to the ends of bones that meet at a joint . The muscles span the joint and connect the bones. When the muscles contract, they pull on the bones, causing them to move."
+      ]
+    },
+    {
+      "id": 94,
+      "question": "What is the ability to see called?",
+      "predicted": "vision",
+      "correct_answer": "vision",
+      "correct_letter": "C",
+      "distractors": [
+        "thought",
+        "smell",
+        "hearing"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Human senses include sight, hearing, balance, taste, smell, and touch.",
+        "The ability to see is called vision. The brain and eyes work together to allow us to see. The eyes collect and focus visible light and change it to electrical signals that travel to the brain. The brain interprets the signals and \u201ctells\u201d us what we are seeing."
+      ]
+    },
+    {
+      "id": 95,
+      "question": "Which two major innovations allowed seed plants to reproduce in the absence of water?",
+      "predicted": "seed and pollen",
+      "correct_answer": "seed and pollen",
+      "correct_letter": "B",
+      "distractors": [
+        "bee and pollen",
+        "root and pollen",
+        "salt and pollen"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "Seeds and Pollen as an Evolutionary Adaptation to Dry Land Unlike bryophyte and fern spores (which are haploid cells dependent on moisture for rapid development of gametophytes), seeds contain a diploid embryo that will germinate into a sporophyte. Storage tissue to sustain growth and a protective coat give seeds their superior evolutionary advantage. Several layers of hardened tissue prevent desiccation, and free reproduction from the need for a constant supply of water. Furthermore, seeds remain in a state of dormancy\u2014induced by desiccation and the hormone abscisic acid\u2014until conditions for growth become favorable. Whether blown by the.",
+        "CHAPTER SUMMARY 26.1 Evolution of Seed Plants Seed plants appeared about one million years ago, during the Carboniferous period. Two major innovations\u2014seed and pollen\u2014allowed seed plants to reproduce in the absence of water. The gametophytes of seed plants shrank, while the sporophytes became prominent structures and the diploid stage became the longest phase of the lifecycle. Gymnosperms became the dominant group during the Triassic. In these, pollen grains and seeds protect against desiccation. The seed, unlike a spore, is a diploid embryo surrounded by storage tissue and protective layers. It is equipped to delay germination until growth conditions are optimal. Angiosperms bear both flowers and fruit. The structures protect the gametes and the embryo during its development. Angiosperms appeared during the Mesozoic era and have become the dominant plant life in terrestrial habitats."
+      ]
+    },
+    {
+      "id": 96,
+      "question": "Water can be broken down into hydrogen and oxygen gases by the addition of what?",
+      "predicted": "energy",
+      "correct_answer": "energy",
+      "correct_letter": "A",
+      "distractors": [
+        "motion",
+        "mineral",
+        "demand"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Chemistry in Everyday Life Decomposition of Water / Production of Hydrogen Water consists of the elements hydrogen and oxygen combined in a 2 to 1 ratio. Water can be broken down into hydrogen and oxygen gases by the addition of energy. One way to do this is with a battery or power supply, as shown in (Figure 1.15).",
+        "Hydrogen gas and oxygen gas are ignited to produce water."
+      ]
+    },
+    {
+      "id": 97,
+      "question": "What anatomical feature is shared by all chordates?",
+      "predicted": "notochord",
+      "correct_answer": "notochord",
+      "correct_letter": "A",
+      "distractors": [
+        "isochord",
+        "botachord",
+        "laxchord"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 0.0,
+      "sources": [
+        "Figure 29.2 All chordates are deuterostomes possessing a notochord.",
+        "Vertebrates are a subphylum of the phylum Chordata. Like all chordates, vertebrates have a notochord, a dorsal hollow nerve cord, pharyngeal slits, and a post-anal tail. What other characteristics do vertebrates have? What traits set them apart from invertebrate chordates?."
+      ]
+    },
+    {
+      "id": 98,
+      "question": "With wavelengths from 400-700 nm, what kind of light represents only a very small portion of the spectrum?",
+      "predicted": "visible light",
+      "correct_answer": "visible light",
+      "correct_letter": "B",
+      "distractors": [
+        "invisible light",
+        "sunlight",
+        "ultraviolet light"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The electromagnetic spectrum encompasses a very wide range of wavelengths and frequencies. Visible light is only a very small portion of the spectrum with wavelengths from 400-700 nm.",
+        "The only light that people can see is called visible light . It refers to a very narrow range of wavelengths in the electromagnetic spectrum that falls between infrared light and ultraviolet light. Within the visible range, we see light of different wavelengths as different colors of light, from red light, which has the longest wavelength, to violet light, which has the shortest wavelength. You can see the spectrum of colors of visible light in Figure below . When all of the wavelengths are combined, as they are in sunlight, visible light appears white. You can learn more about visible light in the chapter \"Visible Light\" and at the URL below."
+      ]
+    },
+    {
+      "id": 99,
+      "question": "In humans, the only haploid cells are what reproductive cells?",
+      "predicted": "sperm and egg",
+      "correct_answer": "sperm and egg",
+      "correct_letter": "B",
+      "distractors": [
+        "dna and egg",
+        "sperm and dna",
+        "uteral and sperm"
+      ],
+      "is_correct": true,
+      "exact_match": true,
+      "contains_correct": true,
+      "selected_distractor": false,
+      "adherence": 1.0,
+      "sources": [
+        "The life cycle of a plant is very different from the life cycle of an animal. Humans are made entirely of diploid cells (cells with two sets of chromosomes, referred to as ''2n''). Our only cells that are haploid cells (cells with one set of chromosomes, ''n'') are sperm and egg cells. Plants, however, can live when they are are at the stage of having haploid cells or diploid cells. If a plant has a haploid chromosome number of 20, what is the diploid chromosome number? If the diploid chromosome number is 20, what is the haploid number?.",
+        "A human sperm is a tiny cell with a tail. A human egg is much larger. Both cells are mature haploid gametes that are capable of fertilization. What process is shown in this photograph?."
+      ]
+    }
+  ],
+  "metadata": {
+    "retrieval_limit": 2,
+    "max_samples": 100,
+    "use_hyde": false,
+    "embedding_model": "google/embeddinggemma-300m",
+    "llm_model": "deepseek-chat",
+    "chunk_size": 1000,
+    "chunk_overlap": 80
+  },
+  "correct": 98,
+  "exact_match": 98,
+  "contains_correct": 98,
+  "selected_distractor": 3
+}

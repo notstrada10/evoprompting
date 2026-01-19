@@ -39,10 +39,12 @@ class Config:
     # Benchmarking
     RAGBENCH_DATASET: str = "rungalileo/ragbench"
     RAGBENCH_SUBSET: str = "hotpotqa"
+    SCIQ_DATASET: str = "allenai/sciq"
+    BENCHMARK_DATASET: str = "sciq" #sciq o ragbench
     DEFAULT_RETRIEVAL_LIMIT: int = 5
 
     # Paths
-    RESULTS_DIR: str = "results"
+    RESULTS_DIR: str = "thesis_results"
 
     @classmethod
     def validate(cls) -> None:

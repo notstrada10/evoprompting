@@ -209,6 +209,7 @@ __marimo__/
 # Benchmarks
 ragbench/
 src/results/
+src/thesis_results
 
 # macOS
 .DS_Store
@@ -222,3 +223,4 @@ TODO.md
 queries/
 QUICKSTART.md
 Query.sql
+\nthesis_results/
