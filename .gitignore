@@ -210,6 +210,8 @@ __marimo__/
 ragbench/
 src/results/
 src/thesis_results
+benchmark_*.json
+thesis_results/
 
 # macOS
 .DS_Store
