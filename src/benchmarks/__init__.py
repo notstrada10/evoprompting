@@ -2,6 +2,6 @@
 Benchmarking tools for evaluating RAG system performance.
 """
 
-from .rag_bench import main as benchmark_main
+from .rag_bench import run_benchmark_pipeline
 
-__all__ = ["benchmark_main"]
+__all__ = ["run_benchmark_pipeline"]

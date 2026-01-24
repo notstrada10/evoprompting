@@ -12,39 +12,24 @@ logger = logging.getLogger(__name__)
 
 class HyDERAGSystem:
     """
-    HyDE (Hypothetical Document Embeddings) RAG implementation.
-
-    Architecture:
-    1. Query Understanding Layer: Analyze user intent
-    2. Hypothetical Document Layer: Generate hypothetical answer, embed it
-    3. Enhanced Retrieval Layer: Search using hypothesis embedding
-    4. Processing Layer: Generate final answer from real documents
+    HyDE (Hypothetical Document Embeddings) RAG.
     """
 
-    def __init__(self, model: str = None, use_reranking: bool = False):
+    def __init__(self, model: str | None = None):
         """
         Initialize the HyDE RAG system.
 
         Args:
             model: Model to use for generation.
-            use_reranking: Whether to use cross-encoder reranking. Defaults to False.
         """
-        if Config.LLM_PROVIDER == "deepseek":
-            if not Config.DEEPSEEK_API_KEY:
-                raise ValueError("DEEPSEEK_API_KEY not found in environment variables")
-            self.llm = OpenAI(
-                api_key=Config.DEEPSEEK_API_KEY,
-                base_url=Config.DEEPSEEK_BASE_URL
-            )
-            self.model = model or Config.DEEPSEEK_MODEL
-        else:
-            from groq import Groq
-            if not Config.GROQ_API_KEY:
-                raise ValueError("GROQ_API_KEY not found in environment variables")
-            self.llm = Groq(api_key=Config.GROQ_API_KEY)
-            self.model = model or Config.GROQ_MODEL
-
-        self.vector_search = VectorSearch(use_reranking=use_reranking)
+        if not Config.DEEPSEEK_API_KEY:
+            raise ValueError("DEEPSEEK_API_KEY not found in environment variables")
+        self.llm = OpenAI(
+            api_key=Config.DEEPSEEK_API_KEY,
+            base_url=Config.DEEPSEEK_BASE_URL
+        )
+        self.model = model or Config.DEEPSEEK_MODEL
+        self.vector_search = VectorSearch()
 
     def setup(self):
         """Setup the database."""
@@ -78,6 +63,7 @@ class HyDERAGSystem:
         Returns:
             Hypothetical answer text.
         """
+
         system_prompt = """You are an expert assistant generating a hypothetical answer to a question.
 
 Your task is to write a detailed, factual-sounding answer that would be typical in a knowledge base document.
@@ -99,36 +85,17 @@ Answer:"""
                     {"role": "user", "content": user_prompt},
                 ],
                 model=self.model,
-                temperature=0.3,  # Lower temperature for more focused hypotheses
-                max_tokens=300  # Keep hypothesis reasonably sized
+                temperature=0.2,
+                max_tokens=350
             )
-
-            if response and response.choices and len(response.choices) > 0:
-                message = response.choices[0].message
-                if message and hasattr(message, 'content') and message.content:
-                    return message.content
-                else:
-                    logger.warning("No content in hypothesis generation response")
-                    return query  # Fallback to original query
-            else:
-                logger.warning("No choices in hypothesis generation response")
-                return query
-
+            return response.choices[0].message.content or query
         except Exception as e:
-            logger.error(f"Error generating hypothesis: {str(e)}")
-            return query  # Fallback to original query
+            logger.error(f"Error generating hypothesis: {e}")
+            return query
 
-    def retrieve(self, query: str, limit: int = 3) -> list[str]:
+    def retrieve(self, query: str, limit: int = 5) -> list[str]:
         """
-        Layer 3: Enhanced retrieval using hypothetical document embedding.
-
-        Instead of embedding the query directly, we:
-        1. Generate a hypothetical answer
-        2. Embed that answer
-        3. Search for documents similar to the hypothesis
-
-        This improves retrieval by matching document-to-document semantics
-        rather than query-to-document.
+        Retrieve using hypothetical document embedding.
 
         Args:
             query: User query.
@@ -137,36 +104,13 @@ Answer:"""
         Returns:
             List of relevant texts.
         """
-        # Generate hypothetical document
         hypothesis = self.generate_hypothesis(query)
-        logger.debug(f"Hypothesis: {hypothesis[:100]}...")
-
-        # Search using hypothesis instead of query
-        results = self.vector_search.search(hypothesis, limit=limit * 3)
-
-        # Apply diversity filter to avoid redundant chunks
-        documents = []
-        seen_titles = {}
-        max_chunks_per_doc = 2
-
-        for (id, text, similarity, metadata) in results:
-            title = text.split('\n')[0] if '\n' in text else text[:100]
-
-            if title not in seen_titles:
-                seen_titles[title] = 0
-
-            if seen_titles[title] < max_chunks_per_doc:
-                documents.append(text)
-                seen_titles[title] += 1
-
-            if len(documents) >= limit:
-                break
-
-        return documents
+        results = self.vector_search.search(hypothesis, limit=limit)
+        return [text for (id, text, similarity, metadata) in results]
 
     def generate(self, query: str, context: list[str]) -> str:
         """
-        Layer 4: Generate final response from retrieved documents.
+        Generate final response from retrieved documents.
 
         Args:
             query: User query.
@@ -175,27 +119,29 @@ Answer:"""
         Returns:
             Generated response.
         """
+
         context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
 
         system_prompt = """
-        You are a helpful assistant that answers questions based on the provided documents.
+            You are a helpful assistant that answers questions based on the provided documents.
 
-        Rules:
-        1. Base your answer on the documents. If they don't contain the answer, say so.
-        2. Synthesize information from multiple documents when relevant.
-        3. Be concise but complete.
-        4. Do not make up information not present in the documents.
-        5. Answer in a complete sentence that restates the question.
-        6. Include all the informations gathered from the documents, when relevant.
-        7. You don't need to say "Based on the provided documents" or similar phrases.
-"""
+            Rules:
+            1. Base your answer on the documents. If they don't contain the answer, say so.
+            2. Synthesize information from multiple documents when relevant.
+            3. Be concise but complete.
+            4. Do not make up information not present in the documents.
+            5. Answer in a complete sentence that restates the question.
+            6. Include all the informations gathered from the documents, when relevant.
+            7. You don't need to say "Based on the provided documents" or similar phrases.
+        """
 
         user_prompt = f"""Documents:
-    {context_text}
 
-    Question: {query}
+            {context_text}
 
-    Provide a direct answer based on the documents above."""
+            Question: {query}
+
+            Provide a direct answer based on the documents above."""
 
         try:
             response = self.llm.chat.completions.create(
@@ -207,18 +153,9 @@ Answer:"""
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
             )
-
-            if response and response.choices and len(response.choices) > 0:
-                message = response.choices[0].message
-                if message and hasattr(message, 'content') and message.content:
-                    return message.content
-                else:
-                    return "Error: No content in response message"
-            else:
-                return "Error: No choices in response"
-
+            return response.choices[0].message.content or ""
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            return f"Error: {e}"
 
     def ask(self, query: str, limit: int = 3) -> dict:
         """

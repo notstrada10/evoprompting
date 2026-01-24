@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    def __init__(self, model: str = None, use_local: bool = None):
+    def __init__(self, model: str | None = None, use_local: bool | None = None):
         """
         Initialize the embedding service.
 

@@ -27,10 +27,7 @@ class Config:
     CHUNK_OVERLAP: int = 80
 
     # LLM
-    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
     DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
-    LLM_PROVIDER: str = "deepseek"  # "groq" or "deepseek"
-    GROQ_MODEL: str = "llama-3.1-8b-instant"
     DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     LLM_TEMPERATURE: float = 0.1
@@ -39,8 +36,6 @@ class Config:
     # Benchmarking
     RAGBENCH_DATASET: str = "rungalileo/ragbench"
     RAGBENCH_SUBSET: str = "hotpotqa"
-    SCIQ_DATASET: str = "allenai/sciq"
-    BENCHMARK_DATASET: str = "sciq" #sciq o ragbench
     DEFAULT_RETRIEVAL_LIMIT: int = 5
 
     # Paths
@@ -51,5 +46,3 @@ class Config:
         """Validate required configuration values are set."""
         if not cls.DATABASE_URL:
             raise ValueError("DATABASE_URL must be set in environment variables")
-        if not cls.GROQ_API_KEY:
-            raise ValueError("GROQ_API_KEY must be set in environment variables")

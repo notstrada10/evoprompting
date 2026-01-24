@@ -1,7 +1,5 @@
 import logging
 
-from sentence_transformers import CrossEncoder
-
 from ..config import Config
 from .db import VectorDatabase
 from .embeddings import EmbeddingService
@@ -9,7 +7,7 @@ from .embeddings import EmbeddingService
 logger = logging.getLogger(__name__)
 
 
-def chunk_text(text: str, chunk_size: int = None, overlap: int = None) -> list[str]:
+def chunk_text(text: str, chunk_size: int | None = None, overlap: int | None = None) -> list[str]:
     """
     Split text into overlapping chunks.
 
@@ -42,33 +40,23 @@ def chunk_text(text: str, chunk_size: int = None, overlap: int = None) -> list[s
 
 
 class VectorSearch:
-    def __init__(self, model: str = None, use_reranking: bool = True):
+    def __init__(self, model: str | None = None):
         """
         Initialize the vector search system.
 
         Args:
             model: Embedding model name. Defaults to Config.EMBEDDING_MODEL.
-            use_reranking: Whether to use cross-encoder reranking. Defaults to True.
         """
         self.embedding_service = EmbeddingService(model=model)
         self.db = VectorDatabase()
         self.db.connect()
-        self.use_reranking = use_reranking
-        self._reranker = None
 
-    @property
-    def reranker(self):
-        """Lazy load the reranker model."""
-        if self._reranker is None and self.use_reranking:
-            logger.info("Loading cross-encoder reranker model...")
-            self._reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-        return self._reranker
 
     def setup(self):
         """Setup the database (run only once)."""
         self.db.setup_database()
 
-    def add_text(self, text: str, metadata: dict = None) -> list[int]:
+    def add_text(self, text: str, metadata: dict | None = None) -> list[int]:
         """
         Add text to database with chunking.
 
@@ -113,14 +101,13 @@ class VectorSearch:
             all_ids.extend(chunk_ids)
         return all_ids
 
-    def search(self, query: str, limit: int = 5, rerank_multiplier: int = 4):
+    def search(self, query: str, limit: int = 5):
         """
-        Search for texts most similar to the query with optional reranking.
+        Search for texts most similar to the query.
 
         Args:
             query: Search query text.
             limit: Maximum number of results to return.
-            rerank_multiplier: Retrieve this many times more candidates for reranking.
 
         Returns:
             List of search results.
@@ -129,41 +116,11 @@ class VectorSearch:
         if not query_embedding:
             return []
 
-        # If reranking is enabled, retrieve more candidates
-        if self.use_reranking and self.reranker:
-            initial_limit = limit * rerank_multiplier
-            results = self.db.search_similar(query_embedding, initial_limit)
+        return self.db.search_similar(query_embedding, limit)
 
-            if not results:
-                return []
-
-            # Prepare pairs for reranking
-            pairs = [[query, result[1]] for result in results]  # result[1] is the text
-
-            # Get reranker scores
-            logger.info(f"Reranking {len(results)} candidates...")
-            scores = self.reranker.predict(pairs)
-
-            # Combine results with scores and sort
-            reranked = sorted(
-                zip(results, scores),
-                key=lambda x: x[1],
-                reverse=True
-            )
-
-            # Return top limit results
-            return [r[0] for r in reranked[:limit]]
-        else:
-            # Original behavior without reranking
-            return self.db.search_similar(query_embedding, limit)
 
     def count(self):
-        """
-        Count the number of documents (chunks) in the database.
-
-        Returns:
-            Total number of chunks.
-        """
+        """Count the number of documents (chunks) in the DB."""
         return self.db.count()
 
     def delete_all(self):
