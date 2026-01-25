@@ -1,7 +1,7 @@
 import logging
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 
 from ..config import Config
 from .vector_search import VectorSearch
@@ -21,6 +21,10 @@ class RAGSystem:
         if not Config.DEEPSEEK_API_KEY:
             raise ValueError("DEEPSEEK_API_KEY not found in environment variables")
         self.llm = OpenAI(
+            api_key=Config.DEEPSEEK_API_KEY,
+            base_url=Config.DEEPSEEK_BASE_URL
+        )
+        self.async_llm = AsyncOpenAI(
             api_key=Config.DEEPSEEK_API_KEY,
             base_url=Config.DEEPSEEK_BASE_URL
         )
@@ -139,6 +143,69 @@ class RAGSystem:
 
         answer = self.generate(query, documents)
 
+        return {"query": query, "answer": answer, "sources": documents}
+
+    async def async_generate(self, query: str, context: list[str]) -> str:
+        """
+        Async version of generate for concurrent LLM calls.
+
+        Args:
+            query: User query.
+            context: List of relevant documents.
+
+        Returns:
+            Generated response.
+        """
+        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
+
+        system_prompt = """
+            You are a helpful assistant that answers questions based on the provided documents.
+
+            Rules:
+            1. Base your answer on the documents. If they don't contain the answer, say so.
+            2. Synthesize information from multiple documents when relevant.
+            3. Be concise but complete.
+            4. Do not make up information not present in the documents.
+            5. Answer in a complete sentence that restates the question.
+            6. Include all the informations gathered from the documents, when relevant.
+            7. You don't need to say "Based on the provided documents" or similar phrases.
+        """
+
+        user_prompt = f"""
+
+        Documents: {context_text}
+
+        Question: {query}
+
+        Provide a direct answer based on the documents above."""
+
+        try:
+            response = await self.async_llm.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                model=self.model,
+                temperature=Config.LLM_TEMPERATURE,
+                max_tokens=Config.MAX_TOKENS
+            )
+            return response.choices[0].message.content or ""
+        except Exception as e:
+            return f"Error: {e}"
+
+    async def async_ask(self, query: str, limit: int = 3) -> dict:
+        """
+        Async version of ask for concurrent processing.
+
+        Args:
+            query: User query.
+            limit: Number of documents to retrieve.
+
+        Returns:
+            Dict with answer and documents used.
+        """
+        documents = self.retrieve(query, limit=limit)
+        answer = await self.async_generate(query, documents)
         return {"query": query, "answer": answer, "sources": documents}
 
     def close(self):

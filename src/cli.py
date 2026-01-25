@@ -9,7 +9,7 @@ import sys
 # Suppress tokenizers parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from .benchmarks.rag_bench import run_benchmark_pipeline
+from .benchmarks.rag_bench import run_benchmark_pipeline, run_llm_only_pipeline
 from .config import Config
 from .core.rag import RAGSystem
 
@@ -38,15 +38,22 @@ def setup_command(args):
 
 def benchmark_command(args):
     """Run benchmark evaluation."""
-    run_benchmark_pipeline(
-        subset=args.subset,
-        force_reload=args.force_reload,
-        max_samples=args.max_samples,
-        retrieval_limit=args.retrieval_limit,
-        use_llm_judge=args.use_llm_judge,
-        eval_split=args.eval_split,
-        use_hyde=args.use_hyde,
-    )
+    if args.llm_only:
+        run_llm_only_pipeline(
+            subset=args.subset,
+            max_samples=args.max_samples,
+            eval_split=args.eval_split,
+        )
+    else:
+        run_benchmark_pipeline(
+            subset=args.subset,
+            force_reload=args.force_reload,
+            max_samples=args.max_samples,
+            retrieval_limit=args.retrieval_limit,
+            use_llm_judge=args.use_llm_judge,
+            eval_split=args.eval_split,
+            use_hyde=args.use_hyde,
+        )
 
 
 def main():
@@ -80,6 +87,8 @@ def main():
                                  help='Eval split: validation (for optimization) or test (final eval)')
     benchmark_parser.add_argument('--use-hyde', action='store_true',
                                  help='Use HyDE RAG instead of standard RAG')
+    benchmark_parser.add_argument('--llm-only', action='store_true',
+                                 help='Run LLM-only baseline (no RAG)')
     benchmark_parser.add_argument('--subset', type=str, default='hotpotqa',
                                  help='RAGBench subset to use (default: hotpotqa)')
 

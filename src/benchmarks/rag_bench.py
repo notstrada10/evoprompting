@@ -1,6 +1,10 @@
+import asyncio
 import json
 import logging
 import os
+import re
+import string
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -89,9 +93,65 @@ def prepare_knowledge_base(rag, dataset, config: DatasetConfig, force_reload: bo
 
 
 # =============================================================================
-# Metrics
+# Metrics (HotPotQA official evaluation)
 # =============================================================================
 
+def normalize_answer(s: str) -> str:
+    """Normalize answer for evaluation (official HotPotQA normalization)."""
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def calculate_f1(prediction: str, ground_truth: str) -> tuple[float, float, float]:
+    """Calculate F1, Precision, Recall (official HotPotQA implementation).
+
+    Returns:
+        Tuple of (f1, precision, recall)
+    """
+    normalized_prediction = normalize_answer(prediction)
+    normalized_ground_truth = normalize_answer(ground_truth)
+
+    ZERO_METRIC = (0.0, 0.0, 0.0)
+
+    # Special handling for yes/no answers
+    if normalized_prediction in ['yes', 'no', 'noanswer'] and normalized_prediction != normalized_ground_truth:
+        return ZERO_METRIC
+    if normalized_ground_truth in ['yes', 'no', 'noanswer'] and normalized_prediction != normalized_ground_truth:
+        return ZERO_METRIC
+
+    prediction_tokens = normalized_prediction.split()
+    ground_truth_tokens = normalized_ground_truth.split()
+
+    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+    num_same = sum(common.values())
+
+    if num_same == 0:
+        return ZERO_METRIC
+
+    precision = 1.0 * num_same / len(prediction_tokens)
+    recall = 1.0 * num_same / len(ground_truth_tokens)
+    f1 = (2 * precision * recall) / (precision + recall)
+    return f1, precision, recall
+
+
+def calculate_exact_match(prediction: str, ground_truth: str) -> bool:
+    """Calculate exact match (official HotPotQA implementation)."""
+    return normalize_answer(prediction) == normalize_answer(ground_truth)
+
+
+# Stopwords for adherence calculation
 STOPWORDS = {
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
@@ -104,26 +164,6 @@ STOPWORDS = {
     'these', 'those', 'i', 'you', 'he', 'she', 'they', 'we', 'what', 'which',
     'who', 'whom', 'how', 'when', 'where', 'why', 'all', 'any', 'if'
 }
-
-
-def calculate_f1(predicted: str, ground_truth: str) -> float:
-    """Calculate F1 score based on token overlap."""
-    pred_tokens = set(predicted.lower().split())
-    truth_tokens = set(ground_truth.lower().split())
-
-    if not truth_tokens:
-        return 1.0 if not pred_tokens else 0.0
-
-    common = pred_tokens & truth_tokens
-    if not common:
-        return 0.0
-
-    precision = len(common) / len(pred_tokens) if pred_tokens else 0.0
-    recall = len(common) / len(truth_tokens)
-
-    if precision + recall == 0:
-        return 0.0
-    return 2 * (precision * recall) / (precision + recall)
 
 
 def calculate_context_relevance(retrieved_docs: List[str], gold_docs: List[str]) -> float:
@@ -166,15 +206,15 @@ def llm_judge_correctness(predicted: str, ground_truth: str, question: str, llm_
     """Use an LLM to judge if the predicted answer is correct."""
     judge_prompt = f"""You are an expert evaluator judging the correctness of question-answering systems.
 
-Question: {question}
-Ground Truth Answer: {ground_truth}
-Predicted Answer: {predicted}
+    Question: {question}
+    Ground Truth Answer: {ground_truth}
+    Predicted Answer: {predicted}
 
-Evaluate if the predicted answer is semantically equivalent to the ground truth answer.
-Respond in this exact format:
-CORRECT: [yes/no]
-CONFIDENCE: [0.0-1.0]
-REASONING: [brief explanation]"""
+    Evaluate if the predicted answer is semantically equivalent to the ground truth answer.
+    Respond in this exact format:
+        CORRECT: [yes/no]
+        CONFIDENCE: [0.0-1.0]
+        REASONING: [brief explanation]"""
 
     try:
         response = llm_client.chat.completions.create(
@@ -214,8 +254,50 @@ REASONING: [brief explanation]"""
 # Benchmark Runner
 # =============================================================================
 
-def process_single_sample(rag, item, config: DatasetConfig, idx: int, retrieval_limit: int, use_llm_judge: bool):
-    """Process a single benchmark sample. Called in parallel."""
+async def process_single_sample_llm_only(async_llm, model: str, item, config: DatasetConfig, idx: int):
+    """Process a single sample using LLM only (no RAG) - baseline."""
+    question = item.get(config.question_field, '')
+    ground_truth = item.get(config.answer_field, '')
+    if not question or not ground_truth:
+        return None
+
+    system_prompt = "You are a helpful assistant. Answer the question concisely and accurately."
+    user_prompt = f"Question: {question}\n\nAnswer:"
+
+    try:
+        response = await async_llm.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model=model,
+            temperature=Config.LLM_TEMPERATURE,
+            max_tokens=Config.MAX_TOKENS
+        )
+        predicted = response.choices[0].message.content or ""
+    except Exception as e:
+        predicted = f"Error: {e}"
+
+    # Calculate metrics
+    exact = calculate_exact_match(predicted, ground_truth)
+    contains = normalize_answer(ground_truth) in normalize_answer(predicted)
+    f1, precision, recall = calculate_f1(predicted, ground_truth)
+
+    return {
+        "id": item.get('id', idx),
+        "query": question,
+        "predicted": predicted,
+        "ground_truth": ground_truth,
+        "exact_match": exact,
+        "contains": contains,
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,
+    }
+
+
+async def process_single_sample(rag, item, config: DatasetConfig, idx: int, retrieval_limit: int, use_llm_judge: bool):
+    """Process a single benchmark sample asynchronously."""
     question = item.get(config.question_field, '')
     ground_truth = item.get(config.answer_field, '')
     if not question or not ground_truth:
@@ -223,15 +305,15 @@ def process_single_sample(rag, item, config: DatasetConfig, idx: int, retrieval_
 
     gold_docs = item.get(config.documents_field, [])
 
-    result = rag.ask(question, limit=retrieval_limit)
+    result = await rag.async_ask(question, limit=retrieval_limit)
     predicted = result['answer']
     retrieved_docs = result['sources']
 
-    # Calculate metrics
+    # Calculate metrics (using official HotPotQA evaluation)
     adherence = calculate_adherence(predicted, retrieved_docs)
-    exact = predicted.strip().lower() == ground_truth.strip().lower()
-    contains = ground_truth.strip().lower() in predicted.strip().lower()
-    f1 = calculate_f1(predicted, ground_truth)
+    exact = calculate_exact_match(predicted, ground_truth)
+    contains = normalize_answer(ground_truth) in normalize_answer(predicted)
+    f1, precision, recall = calculate_f1(predicted, ground_truth)
     relevance = calculate_context_relevance(retrieved_docs, gold_docs)
     utilization = calculate_context_utilization(predicted, retrieved_docs)
 
@@ -243,6 +325,8 @@ def process_single_sample(rag, item, config: DatasetConfig, idx: int, retrieval_
         "exact_match": exact,
         "contains": contains,
         "f1": f1,
+        "precision": precision,
+        "recall": recall,
         "relevance": relevance,
         "utilization": utilization,
         "adherence": adherence,
@@ -256,12 +340,81 @@ def process_single_sample(rag, item, config: DatasetConfig, idx: int, retrieval_
     return prediction_entry
 
 
-def run_benchmark(rag, dataset, config: DatasetConfig, max_samples: int = None,
-                  retrieval_limit: int = None, use_llm_judge: bool = False,
-                  use_hyde: bool = False) -> Dict:
-    """Run RAG benchmark sequentially."""
+BATCH_SIZE = 50  # Number of concurrent LLM requests
+
+
+async def run_llm_only_benchmark_async(dataset, config: DatasetConfig, max_samples: int = None) -> Dict:
+    """Run LLM-only benchmark (baseline without RAG)."""
+    from openai import AsyncOpenAI
+
+    async_llm = AsyncOpenAI(
+        api_key=Config.DEEPSEEK_API_KEY,
+        base_url=Config.DEEPSEEK_BASE_URL
+    )
+    model = Config.DEEPSEEK_MODEL
+
+    logger.info(f"Running {config.name} LLM-ONLY baseline with {BATCH_SIZE} concurrent requests...")
+
+    results = {
+        "dataset": config.name + "-llm-only",
+        "total": 0,
+        "exact_match": 0,
+        "contains": 0,
+        "f1_scores": [],
+        "precision_scores": [],
+        "recall_scores": [],
+        "predictions": [],
+        "metadata": {
+            "max_samples": max_samples,
+            "llm_model": model,
+            "mode": "llm-only-baseline",
+        }
+    }
+
+    samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
+    samples = list(dataset)[:samples_to_test]
+
+    for batch_start in range(0, len(samples), BATCH_SIZE):
+        batch_end = min(batch_start + BATCH_SIZE, len(samples))
+        batch = samples[batch_start:batch_end]
+
+        tasks = [
+            process_single_sample_llm_only(async_llm, model, item, config, batch_start + i)
+            for i, item in enumerate(batch)
+        ]
+
+        batch_results = await asyncio.gather(*tasks)
+
+        for prediction_entry in batch_results:
+            if prediction_entry is None:
+                continue
+
+            results["exact_match"] += int(prediction_entry["exact_match"])
+            results["contains"] += int(prediction_entry["contains"])
+            results["f1_scores"].append(prediction_entry["f1"])
+            results["precision_scores"].append(prediction_entry["precision"])
+            results["recall_scores"].append(prediction_entry["recall"])
+            results["predictions"].append(prediction_entry)
+            results["total"] += 1
+
+        if results["total"] > 0:
+            avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
+            logger.info(f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}")
+
+    return results
+
+
+def run_llm_only_benchmark(dataset, config: DatasetConfig, max_samples: int = None) -> Dict:
+    """Run LLM-only benchmark (baseline)."""
+    return asyncio.run(run_llm_only_benchmark_async(dataset, config, max_samples))
+
+
+async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: int = None,
+                              retrieval_limit: int = None, use_llm_judge: bool = False,
+                              use_hyde: bool = False) -> Dict:
+    """Run RAG benchmark with concurrent LLM requests."""
     retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
-    logger.info(f"Running {config.name} benchmark...")
+    logger.info(f"Running {config.name} benchmark with {BATCH_SIZE} concurrent requests...")
 
     results = {
         "dataset": config.name,
@@ -269,6 +422,8 @@ def run_benchmark(rag, dataset, config: DatasetConfig, max_samples: int = None,
         "exact_match": 0,
         "contains": 0,
         "f1_scores": [],
+        "precision_scores": [],
+        "recall_scores": [],
         "relevance_scores": [],
         "utilization_scores": [],
         "adherence_scores": [],
@@ -291,33 +446,57 @@ def run_benchmark(rag, dataset, config: DatasetConfig, max_samples: int = None,
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
 
-    for idx, item in enumerate(samples):
-        prediction_entry = process_single_sample(rag, item, config, idx, retrieval_limit, use_llm_judge)
-        if prediction_entry is None:
-            continue
+    # Process in batches of BATCH_SIZE
+    for batch_start in range(0, len(samples), BATCH_SIZE):
+        batch_end = min(batch_start + BATCH_SIZE, len(samples))
+        batch = samples[batch_start:batch_end]
 
-        results["exact_match"] += int(prediction_entry["exact_match"])
-        results["contains"] += int(prediction_entry["contains"])
-        results["f1_scores"].append(prediction_entry["f1"])
-        results["relevance_scores"].append(prediction_entry["relevance"])
-        results["utilization_scores"].append(prediction_entry["utilization"])
-        results["adherence_scores"].append(prediction_entry["adherence"])
-        results["predictions"].append(prediction_entry)
-        results["total"] += 1
+        # Create async tasks for this batch
+        tasks = [
+            process_single_sample(rag, item, config, batch_start + i, retrieval_limit, use_llm_judge)
+            for i, item in enumerate(batch)
+        ]
 
-        if use_llm_judge and "llm_judge" in prediction_entry:
-            results["llm_judge_scores"].append(prediction_entry["llm_judge"]["score"])
-            results["llm_correct_count"] += int(prediction_entry["llm_judge"]["is_correct"])
+        # Run batch concurrently
+        batch_results = await asyncio.gather(*tasks)
 
-        if (idx + 1) % 10 == 0:
+        # Process results
+        for prediction_entry in batch_results:
+            if prediction_entry is None:
+                continue
+
+            results["exact_match"] += int(prediction_entry["exact_match"])
+            results["contains"] += int(prediction_entry["contains"])
+            results["f1_scores"].append(prediction_entry["f1"])
+            results["precision_scores"].append(prediction_entry["precision"])
+            results["recall_scores"].append(prediction_entry["recall"])
+            results["relevance_scores"].append(prediction_entry["relevance"])
+            results["utilization_scores"].append(prediction_entry["utilization"])
+            results["adherence_scores"].append(prediction_entry["adherence"])
+            results["predictions"].append(prediction_entry)
+            results["total"] += 1
+
+            if use_llm_judge and "llm_judge" in prediction_entry:
+                results["llm_judge_scores"].append(prediction_entry["llm_judge"]["score"])
+                results["llm_correct_count"] += int(prediction_entry["llm_judge"]["is_correct"])
+
+        # Log progress after each batch
+        if results["total"] > 0:
             avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
             avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-            progress_msg = f"Progress: {idx + 1}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}"
+            progress_msg = f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}"
             if use_llm_judge:
                 progress_msg += f" | LLM Judge: {results['llm_correct_count'] / results['total']:.1%}"
             logger.info(progress_msg)
 
     return results
+
+
+def run_benchmark(rag, dataset, config: DatasetConfig, max_samples: int = None,
+                  retrieval_limit: int = None, use_llm_judge: bool = False,
+                  use_hyde: bool = False) -> Dict:
+    """Run RAG benchmark with concurrent LLM requests."""
+    return asyncio.run(run_benchmark_async(rag, dataset, config, max_samples, retrieval_limit, use_llm_judge, use_hyde))
 
 
 # =============================================================================
@@ -330,23 +509,23 @@ def compute_summary(results: Dict) -> Dict:
     if total == 0:
         return {}
 
-    avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
-    avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-
     summary = {
         "dataset": results["dataset"],
         "exact_match_rate": results["exact_match"] / total,
         "contains_rate": results["contains"] / total,
-        "avg_f1": avg_f1,
-        "avg_relevance": sum(results["relevance_scores"]) / len(results["relevance_scores"]),
-        "avg_utilization": sum(results["utilization_scores"]) / len(results["utilization_scores"]),
-        "avg_adherence": avg_adherence,
-        "fitness_score": avg_f1,
+        "avg_f1": sum(results["f1_scores"]) / len(results["f1_scores"]),
+        "avg_precision": sum(results["precision_scores"]) / len(results["precision_scores"]),
+        "avg_recall": sum(results["recall_scores"]) / len(results["recall_scores"]),
     }
+
+    # RAG-specific metrics (not present in LLM-only baseline)
+    if "relevance_scores" in results and results["relevance_scores"]:
+        summary["avg_relevance"] = sum(results["relevance_scores"]) / len(results["relevance_scores"])
+        summary["avg_utilization"] = sum(results["utilization_scores"]) / len(results["utilization_scores"])
+        summary["avg_adherence"] = sum(results["adherence_scores"]) / len(results["adherence_scores"])
 
     if "llm_judge_scores" in results:
         summary["llm_judge_accuracy"] = results["llm_correct_count"] / total
-        summary["fitness_score"] = summary["llm_judge_accuracy"]
 
     return summary
 
@@ -364,19 +543,23 @@ def print_results(results: Dict) -> None:
     logger.info(f"{results['dataset'].upper()} BENCHMARK RESULTS")
     logger.info("="*60)
 
-    logger.info(f"\n  FITNESS SCORE: {summary['fitness_score']:.1%}")
     logger.info(f"\n  Total samples: {total}")
     logger.info(f"  Exact Match: {summary['exact_match_rate']:.2%}")
     logger.info(f"  Contains Answer: {summary['contains_rate']:.2%}")
-    logger.info(f"  Average F1 Score: {summary['avg_f1']:.3f}")
-    logger.info(f"  Context Relevance: {summary['avg_relevance']:.3f}")
-    logger.info(f"  Context Utilization: {summary['avg_utilization']:.3f}")
-    logger.info(f"  Adherence: {summary['avg_adherence']:.3f}")
+    logger.info(f"  F1: {summary['avg_f1']:.3f}")
+    logger.info(f"  Precision: {summary['avg_precision']:.3f}")
+    logger.info(f"  Recall: {summary['avg_recall']:.3f}")
+
+    # RAG-specific metrics (only for RAG benchmarks)
+    if "avg_relevance" in summary:
+        logger.info(f"  Context Relevance: {summary['avg_relevance']:.3f}")
+        logger.info(f"  Context Utilization: {summary['avg_utilization']:.3f}")
+        logger.info(f"  Adherence: {summary['avg_adherence']:.3f}")
 
     if "llm_judge_accuracy" in summary:
         logger.info(f"  LLM Judge Accuracy: {summary['llm_judge_accuracy']:.2%}")
 
-    logger.info(f"\nSample Predictions:")
+    logger.info("\nSample Predictions:")
     for i, pred in enumerate(results["predictions"][:3]):
         logger.info(f"\n  Example {i+1}:")
         logger.info(f"    Query: {pred['query'][:100]}...")
@@ -475,3 +658,32 @@ def run_benchmark_pipeline(
     finally:
         rag.close()
         logger.info("\nBenchmark complete")
+
+
+def run_llm_only_pipeline(
+    subset: str = "hotpotqa",
+    max_samples: int = 50,
+    eval_split: str = "test",
+):
+    """Run LLM-only baseline benchmark (no RAG)."""
+    config = DatasetConfig(
+        name=f"ragbench-{subset}",
+        source=Config.RAGBENCH_DATASET,
+        subset=subset,
+        question_field="question",
+        answer_field="response",
+        documents_field="documents",
+    )
+    logger.info(f"{config.name.upper()} LLM-ONLY BASELINE")
+    logger.info("="*60)
+
+    # Load evaluation dataset
+    eval_dataset = load_benchmark_dataset(config, split=eval_split)
+    logger.info(f"Evaluating on {eval_split} split ({len(eval_dataset)} samples)")
+
+    # Run LLM-only benchmark
+    results = run_llm_only_benchmark(eval_dataset, config, max_samples=max_samples)
+    print_results(results)
+    save_results(results)
+
+    logger.info("\nBenchmark complete")
