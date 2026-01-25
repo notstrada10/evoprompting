@@ -9,6 +9,7 @@ import sys
 # Suppress tokenizers parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+from .benchmarks.hotpotqa_official import run_hotpotqa_pipeline
 from .benchmarks.rag_bench import run_benchmark_pipeline, run_llm_only_pipeline
 from .config import Config
 from .core.rag import RAGSystem
@@ -56,6 +57,16 @@ def benchmark_command(args):
         )
 
 
+def hotpotqa_command(args):
+    """Run official HotPotQA benchmark evaluation."""
+    run_hotpotqa_pipeline(
+        force_reload=args.force_reload,
+        max_samples=args.max_samples,
+        retrieval_limit=args.retrieval_limit,
+        use_hyde=args.use_hyde,
+    )
+
+
 def main():
     """Main CLI entry point."""
 
@@ -92,6 +103,17 @@ def main():
     benchmark_parser.add_argument('--subset', type=str, default='hotpotqa',
                                  help='RAGBench subset to use (default: hotpotqa)')
 
+    # Official HotPotQA benchmark command
+    hotpotqa_parser = subparsers.add_parser('hotpotqa', help='Run official HotPotQA dev-distractor benchmark')
+    hotpotqa_parser.add_argument('--force-reload', action='store_true',
+                                help='Clear and reload database')
+    hotpotqa_parser.add_argument('--max-samples', type=int, default=50,
+                                help='Maximum samples to test (default: 50)')
+    hotpotqa_parser.add_argument('--retrieval-limit', type=int,
+                                help=f'Documents to retrieve (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
+    hotpotqa_parser.add_argument('--use-hyde', action='store_true',
+                                help='Use HyDE RAG instead of standard RAG')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -101,6 +123,7 @@ def main():
     commands = {
         'setup': setup_command,
         'benchmark': benchmark_command,
+        'hotpotqa': hotpotqa_command,
     }
 
     try:
@@ -112,3 +135,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+# TODO: Sisetmare codice per hotpot e per i prompt e avere i risultati :)

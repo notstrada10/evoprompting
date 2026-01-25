@@ -15,14 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 class VectorDatabase:
-    def __init__(self, connection_string: Optional[str] = None):
+    def __init__(self, connection_string: Optional[str] = None, table_name: str = "embeddings"):
         """
         Initialize the vector database.
 
         Args:
             connection_string: PostgreSQL connection string. Defaults to Config.DATABASE_URL.
+            table_name: Name of the table to use for embeddings. Defaults to "embeddings".
         """
         self.connection_string = connection_string or Config.DATABASE_URL
+        self.table_name = table_name
         self.conn: Optional[Connection] = None
 
     def connect(self) -> None:
@@ -59,7 +61,7 @@ class VectorDatabase:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
             cur.execute(f"""
-                CREATE TABLE IF NOT EXISTS embeddings (
+                CREATE TABLE IF NOT EXISTS {self.table_name} (
                     id SERIAL PRIMARY KEY,
                     text TEXT NOT NULL,
                     embedding vector({Config.EMBEDDING_DIM}),
@@ -68,14 +70,14 @@ class VectorDatabase:
                 );
             """)
 
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS embeddings_vector_idx
-                ON embeddings
+            cur.execute(f"""
+                CREATE INDEX IF NOT EXISTS {self.table_name}_vector_idx
+                ON {self.table_name}
                 USING hnsw (embedding vector_cosine_ops);
             """)
 
             conn.commit()
-            logger.info("Database setup complete")
+            logger.info(f"Database setup complete for table '{self.table_name}'")
 
     def insert_embedding(
         self, text: str, embedding: list[float], metadata: Optional[dict[str, Any]] = None
@@ -96,8 +98,8 @@ class VectorDatabase:
             embedding_array = np.array(embedding)
 
             cur.execute(
-                """
-                INSERT INTO embeddings (text, embedding, metadata)
+                f"""
+                INSERT INTO {self.table_name} (text, embedding, metadata)
                 VALUES (%s, %s, %s)
                 RETURNING id;
                 """,
@@ -110,6 +112,51 @@ class VectorDatabase:
             inserted_id = result[0]
             conn.commit()
             return inserted_id
+
+    def insert_embeddings_batch(
+        self, items: list[tuple[str, list[float], Optional[dict[str, Any]]]]
+    ) -> list[int]:
+        """
+        Insert multiple text embeddings into the database in a single transaction.
+
+        Args:
+            items: List of tuples (text, embedding, metadata).
+
+        Returns:
+            List of IDs for inserted records.
+        """
+        if not items:
+            return []
+
+        conn = self._ensure_connection()
+        ids = []
+
+        with conn.cursor() as cur:
+            from psycopg2.extras import execute_values
+
+            # Prepare data for batch insert
+            values = [
+                (text, np.array(embedding), json.dumps(metadata) if metadata else None)
+                for text, embedding, metadata in items
+            ]
+
+            # Use execute_values for efficient batch insert
+            execute_values(
+                cur,
+                f"""
+                INSERT INTO {self.table_name} (text, embedding, metadata)
+                VALUES %s
+                RETURNING id;
+                """,
+                values,
+                template="(%s, %s, %s)",
+                fetch=True
+            )
+
+            ids = [row[0] for row in cur.fetchall()]
+            conn.commit()
+
+        return ids
 
     def search_similar(
         self, query_embedding: list[float], limit: int = 5
@@ -129,13 +176,13 @@ class VectorDatabase:
             query_array = np.array(query_embedding)
 
             cur.execute(
-                """
+                f"""
                 SELECT
                     id,
                     text,
                     1 - (embedding <=> %s) as similarity,
                     metadata
-                FROM embeddings
+                FROM {self.table_name}
                 ORDER BY embedding <=> %s
                 LIMIT %s;
             """,
@@ -151,9 +198,9 @@ class VectorDatabase:
             return
 
         with self.conn.cursor() as cur:
-            cur.execute("TRUNCATE TABLE embeddings;")
+            cur.execute(f"TRUNCATE TABLE {self.table_name};")
             self.conn.commit()
-            logger.info("All embeddings deleted")
+            logger.info(f"All embeddings deleted from table '{self.table_name}'")
 
     def count(self) -> int:
         """
@@ -164,7 +211,7 @@ class VectorDatabase:
         """
         conn = self._ensure_connection()
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM embeddings;")
+            cur.execute(f"SELECT COUNT(*) FROM {self.table_name};")
             result = cur.fetchone()
             if result is None:
                 return 0

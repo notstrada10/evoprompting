@@ -63,3 +63,47 @@ class EmbeddingService:
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return None
+
+    def get_embeddings_batch(self, texts: list[str], batch_size: int = 16) -> list[list[float] | None]:
+        """
+        Generate embeddings for multiple texts in batches.
+
+        Args:
+            texts: List of input texts to embed.
+            batch_size: Number of texts to process in each batch. Defaults to 16.
+
+        Returns:
+            List of embeddings (or None for failed texts) in the same order as input.
+        """
+        if not texts:
+            return []
+
+        results: list[list[float] | None] = [None] * len(texts)
+
+        try:
+            if self.use_local:
+                # SentenceTransformer handles batching efficiently
+                all_embeddings = self.local_model.encode(
+                    texts,
+                    batch_size=batch_size,
+                    show_progress_bar=len(texts) > 100
+                )
+                for i, emb in enumerate(all_embeddings):
+                    results[i] = emb.tolist()
+            else:
+                # Process in batches for API calls
+                for i in range(0, len(texts), batch_size):
+                    batch = texts[i:i + batch_size]
+                    for j, text in enumerate(batch):
+                        try:
+                            result = self.api_client.feature_extraction(text, model=self.model_name)
+                            if hasattr(result, 'tolist'):
+                                results[i + j] = result.tolist()
+                            else:
+                                results[i + j] = list(result)
+                        except Exception as e:
+                            logger.error(f"Error generating embedding for text {i + j}: {e}")
+        except Exception as e:
+            logger.error(f"Error in batch embedding: {e}")
+
+        return results

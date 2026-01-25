@@ -40,16 +40,19 @@ def chunk_text(text: str, chunk_size: int | None = None, overlap: int | None = N
 
 
 class VectorSearch:
-    def __init__(self, model: str | None = None):
+    def __init__(self, db: VectorDatabase | None = None, embedding_service: EmbeddingService | None = None, model: str | None = None):
         """
         Initialize the vector search system.
 
         Args:
-            model: Embedding model name. Defaults to Config.EMBEDDING_MODEL.
+            db: Optional VectorDatabase instance. If not provided, creates a new one.
+            embedding_service: Optional EmbeddingService instance. If not provided, creates a new one.
+            model: Embedding model name (only used if embedding_service is not provided). Defaults to Config.EMBEDDING_MODEL.
         """
-        self.embedding_service = EmbeddingService(model=model)
-        self.db = VectorDatabase()
-        self.db.connect()
+        self.embedding_service = embedding_service or EmbeddingService(model=model)
+        self.db = db or VectorDatabase()
+        if db is None:
+            self.db.connect()
 
 
     def setup(self):
@@ -85,20 +88,60 @@ class VectorSearch:
 
         return ids
 
-    def add_texts(self, texts: list[tuple[str, dict]]) -> list[int]:
+    def add_texts(self, texts: list[tuple[str, dict]], batch_size: int = 16) -> list[int]:
         """
-        Add multiple texts to the database.
+        Add multiple texts to the database using batch processing.
 
         Args:
             texts: List of (text, metadata) tuples.
+            batch_size: Number of texts to embed and insert in each batch. Defaults to 16.
 
         Returns:
             List of all chunk IDs created.
         """
-        all_ids = []
+        # First, chunk all texts and prepare metadata
+        all_chunks = []
+        all_metadata = []
+
         for text, metadata in texts:
-            chunk_ids = self.add_text(text, metadata)
-            all_ids.extend(chunk_ids)
+            chunks = chunk_text(text)
+            for i, chunk in enumerate(chunks):
+                chunk_metadata = {
+                    **(metadata or {}),
+                    "chunk_index": i,
+                    "total_chunks": len(chunks),
+                    "original_text_length": len(text)
+                }
+                all_chunks.append(chunk)
+                all_metadata.append(chunk_metadata)
+
+        if not all_chunks:
+            return []
+
+        all_ids = []
+        total_chunks = len(all_chunks)
+
+        # Process in batches: embed and insert each batch
+        for i in range(0, total_chunks, batch_size):
+            batch_chunks = all_chunks[i:i + batch_size]
+            batch_metadata = all_metadata[i:i + batch_size]
+
+            # Embed this batch
+            embeddings = self.embedding_service.get_embeddings_batch(batch_chunks, batch_size=batch_size)
+
+            # Prepare items for batch insert (filter out failed embeddings)
+            items = [
+                (chunk, emb, meta)
+                for chunk, emb, meta in zip(batch_chunks, embeddings, batch_metadata)
+                if emb is not None
+            ]
+
+            if items:
+                ids = self.db.insert_embeddings_batch(items)
+                all_ids.extend(ids)
+
+            logger.info(f"Processed {min(i + batch_size, total_chunks)}/{total_chunks} chunks")
+
         return all_ids
 
     def search(self, query: str, limit: int = 5):

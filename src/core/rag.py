@@ -106,6 +106,14 @@ class RAGSystem:
             7. You don't need to say "Based on the provided documents" or similar phrases.
         """
 
+        system_prompt2 = """
+            You are a helpful assistant that answers questions based on the provided documents.
+
+            Rules:
+            1. Base your answer on the documents. If they don't contain the answer, say so.
+            3. Respond only with the information needed, with 1, 2 words.
+        """
+
         user_prompt = f"""
 
         Documents: {context_text}
@@ -117,7 +125,7 @@ class RAGSystem:
         try:
             response = self.llm.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": system_prompt2},
                     {"role": "user", "content": user_prompt},
                 ],
                 model=self.model,
@@ -171,6 +179,14 @@ class RAGSystem:
             7. You don't need to say "Based on the provided documents" or similar phrases.
         """
 
+        system_prompt21 = """
+            You are a helpful assistant that answers questions based on the provided documents.
+
+            Rules:
+            1. Base your answer on the documents. If they don't contain the answer, say so.
+            3. Respond only with the information needed, with 1, 2 words.
+        """
+
         user_prompt = f"""
 
         Documents: {context_text}
@@ -182,7 +198,7 @@ class RAGSystem:
         try:
             response = await self.async_llm.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": system_prompt21},
                     {"role": "user", "content": user_prompt},
                 ],
                 model=self.model,
