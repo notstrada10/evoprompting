@@ -56,10 +56,50 @@ class HyDERAGSystem:
                 ids.extend(doc_ids)
         return ids
 
+    def _build_hypothesis_messages(self, query: str) -> list[dict]:
+        """Build the messages for hypothesis generation."""
+        system_prompt = """You generate hypothetical document passages that would answer a question.
+Write a detailed, factual-sounding passage as it would appear in a knowledge base or encyclopedia.
+Be specific with names, dates, and details. Write directly without preamble."""
+
+        user_prompt = f"""Question: {query}
+
+Passage:"""
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+    def _build_answer_messages(self, query: str, context: list[str]) -> list[dict]:
+        """Build the messages for answer generation."""
+        context_text = "\n\n".join([f"[{i+1}] {doc}" for i, doc in enumerate(context)])
+
+        system_prompt = """You are a precise question-answering system. Answer questions using ONLY the provided documents.
+
+            Instructions:
+            - Extract the exact answer from the documents
+            - Be concise: use the minimum words necessary
+            - If the answer is a name, date, number, or short phrase, respond with just that
+            - If multiple documents contain relevant info, synthesize into one brief answer
+            - If the documents don't contain the answer, respond with "Unknown"
+            - Never explain your reasoning or add context"""
+
+        user_prompt = f"""Documents:
+        {context_text}
+
+        Question: {query}
+
+        Answer:"""
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
     def generate_hypothesis(self, query: str) -> str:
         """
-        Layer 2: Generate a hypothetical document that would answer the query.
-        This bridges the semantic gap between short queries and longer documents.
+        Generate a hypothetical document that would answer the query.
 
         Args:
             query: User query.
@@ -67,27 +107,9 @@ class HyDERAGSystem:
         Returns:
             Hypothetical answer text.
         """
-
-        system_prompt = """You are an expert assistant generating a hypothetical answer to a question.
-
-            Your task is to write a detailed, factual-sounding answer that would be typical in a knowledge base document.
-            Write as if you are answering from a reference document, not conversationally.
-            Be specific and include details that would typically appear in such documents.
-
-            Do not mention that this is hypothetical. Just write the answer directly."""
-
-        user_prompt = f"""Generate a detailed answer to this question as it would appear in a reference document:
-
-Question: {query}
-
-Answer:"""
-
         try:
             response = self.llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_hypothesis_messages(query),
                 model=self.model,
                 temperature=0.2,
                 max_tokens=350
@@ -123,36 +145,9 @@ Answer:"""
         Returns:
             Generated response.
         """
-
-        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
-
-        system_prompt = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            2. Synthesize information from multiple documents when relevant.
-            3. Be concise but complete.
-            4. Do not make up information not present in the documents.
-            5. Answer in a complete sentence that restates the question.
-            6. Include all the informations gathered from the documents, when relevant.
-            7. You don't need to say "Based on the provided documents" or similar phrases.
-        """
-
-        user_prompt = f"""Documents:
-
-            {context_text}
-
-            Question: {query}
-
-            Provide a direct answer based on the documents above."""
-
         try:
             response = self.llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_answer_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
@@ -187,26 +182,9 @@ Answer:"""
 
     async def async_generate_hypothesis(self, query: str) -> str:
         """Async version of generate_hypothesis."""
-        system_prompt = """You are an expert assistant generating a hypothetical answer to a question.
-
-Your task is to write a detailed, factual-sounding answer that would be typical in a knowledge base document.
-Write as if you are answering from a reference document, not conversationally.
-Be specific and include details that would typically appear in such documents.
-
-Do not mention that this is hypothetical. Just write the answer directly."""
-
-        user_prompt = f"""Generate a detailed answer to this question as it would appear in a reference document:
-
-Question: {query}
-
-Answer:"""
-
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_hypothesis_messages(query),
                 model=self.model,
                 temperature=0.2,
                 max_tokens=350
@@ -218,43 +196,9 @@ Answer:"""
 
     async def async_generate(self, query: str, context: list[str]) -> str:
         """Async version of generate."""
-        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
-
-        system_prompt = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            2. Synthesize information from multiple documents when relevant.
-            3. Be concise but complete.
-            4. Do not make up information not present in the documents.
-            5. Answer in a complete sentence that restates the question.
-            6. Include all the informations gathered from the documents, when relevant.
-            7. You don't need to say "Based on the provided documents" or similar phrases.
-        """
-
-        system_prompt2 = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            3. Respond only with the information needed, with 1, 2 words.
-        """
-
-        user_prompt = f"""Documents:
-
-            {context_text}
-
-            Question: {query}
-
-            Provide a direct answer based on the documents above."""
-
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt2},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_answer_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
@@ -280,3 +224,17 @@ Answer:"""
     def close(self):
         """Close connections."""
         self.vector_search.close()
+
+
+system_prompt = """
+    You are a helpful assistant that answers questions based on the provided documents.
+
+    Rules:
+    1. Base your answer on the documents. If they don't contain the answer, say so.
+    2. Synthesize information from multiple documents when relevant.
+    3. Be concise but complete.
+    4. Do not make up information not present in the documents.
+    5. Answer in a complete sentence that restates the question.
+    6. Include all the informations gathered from the documents, when relevant.
+    7. You don't need to say "Based on the provided documents" or similar phrases.
+"""

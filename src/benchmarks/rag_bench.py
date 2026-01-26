@@ -340,9 +340,6 @@ async def process_single_sample(rag, item, config: DatasetConfig, idx: int, retr
     return prediction_entry
 
 
-BATCH_SIZE = 50  # Number of concurrent LLM requests
-
-
 async def run_llm_only_benchmark_async(dataset, config: DatasetConfig, max_samples: int = None) -> Dict:
     """Run LLM-only benchmark (baseline without RAG)."""
     from openai import AsyncOpenAI
@@ -353,7 +350,7 @@ async def run_llm_only_benchmark_async(dataset, config: DatasetConfig, max_sampl
     )
     model = Config.DEEPSEEK_MODEL
 
-    logger.info(f"Running {config.name} LLM-ONLY baseline with {BATCH_SIZE} concurrent requests...")
+    logger.info(f"Running {config.name} LLM-ONLY baseline with {Config.BATCH_SIZE} concurrent requests...")
 
     results = {
         "dataset": config.name + "-llm-only",
@@ -374,8 +371,8 @@ async def run_llm_only_benchmark_async(dataset, config: DatasetConfig, max_sampl
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
 
-    for batch_start in range(0, len(samples), BATCH_SIZE):
-        batch_end = min(batch_start + BATCH_SIZE, len(samples))
+    for batch_start in range(0, len(samples), Config.BATCH_SIZE):
+        batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
         batch = samples[batch_start:batch_end]
 
         tasks = [
@@ -414,7 +411,7 @@ async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: 
                               use_hyde: bool = False) -> Dict:
     """Run RAG benchmark with concurrent LLM requests."""
     retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
-    logger.info(f"Running {config.name} benchmark with {BATCH_SIZE} concurrent requests...")
+    logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
 
     results = {
         "dataset": config.name,
@@ -446,9 +443,9 @@ async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: 
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
 
-    # Process in batches of BATCH_SIZE
-    for batch_start in range(0, len(samples), BATCH_SIZE):
-        batch_end = min(batch_start + BATCH_SIZE, len(samples))
+    # Process in batches
+    for batch_start in range(0, len(samples), Config.BATCH_SIZE):
+        batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
         batch = samples[batch_start:batch_end]
 
         # Create async tasks for this batch

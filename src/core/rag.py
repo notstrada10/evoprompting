@@ -80,6 +80,32 @@ class RAGSystem:
         results = self.vector_search.search(query, limit=limit)
         return [text for (id, text, similarity, metadata) in results]
 
+    def _build_messages(self, query: str, context: list[str]) -> list[dict]:
+        """Build the messages for the LLM call."""
+        context_text = "\n\n".join([f"[{i+1}] {doc}" for i, doc in enumerate(context)])
+
+        system_prompt = """You are a precise question-answering system. Answer questions using ONLY the provided documents.
+
+            Instructions:
+            - Extract the exact answer from the documents
+            - Be concise: use the minimum words necessary
+            - If the answer is a name, date, number, or short phrase, respond with just that
+            - If multiple documents contain relevant info, synthesize into one brief answer
+            - If the documents don't contain the answer, say so
+            - Never explain your reasoning or add context"""
+
+        user_prompt = f"""Documents:
+        {context_text}
+
+        Question: {query}
+
+        Answer:"""
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
     def generate(self, query: str, context: list[str]) -> str:
         """
         Generate a response using the LLM.
@@ -91,43 +117,9 @@ class RAGSystem:
         Returns:
             Generated response.
         """
-        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
-
-        system_prompt = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            2. Synthesize information from multiple documents when relevant.
-            3. Be concise but complete.
-            4. Do not make up information not present in the documents.
-            5. Answer in a complete sentence that restates the question.
-            6. Include all the informations gathered from the documents, when relevant.
-            7. You don't need to say "Based on the provided documents" or similar phrases.
-        """
-
-        system_prompt2 = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            3. Respond only with the information needed, with 1, 2 words.
-        """
-
-        user_prompt = f"""
-
-        Documents: {context_text}
-
-        Question: {query}
-
-        Provide a direct answer based on the documents above."""
-
         try:
             response = self.llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt2},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
@@ -164,43 +156,9 @@ class RAGSystem:
         Returns:
             Generated response.
         """
-        context_text = "\n\n".join([f"Document {i+1}:\n{doc}" for i, doc in enumerate(context)])
-
-        system_prompt = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            2. Synthesize information from multiple documents when relevant.
-            3. Be concise but complete.
-            4. Do not make up information not present in the documents.
-            5. Answer in a complete sentence that restates the question.
-            6. Include all the informations gathered from the documents, when relevant.
-            7. You don't need to say "Based on the provided documents" or similar phrases.
-        """
-
-        system_prompt21 = """
-            You are a helpful assistant that answers questions based on the provided documents.
-
-            Rules:
-            1. Base your answer on the documents. If they don't contain the answer, say so.
-            3. Respond only with the information needed, with 1, 2 words.
-        """
-
-        user_prompt = f"""
-
-        Documents: {context_text}
-
-        Question: {query}
-
-        Provide a direct answer based on the documents above."""
-
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt21},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS

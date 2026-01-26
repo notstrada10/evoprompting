@@ -37,6 +37,7 @@ class Config:
     RAGBENCH_DATASET: str = "rungalileo/ragbench"
     RAGBENCH_SUBSET: str = "hotpotqa"
     DEFAULT_RETRIEVAL_LIMIT: int = 5
+    BATCH_SIZE: int = 100 # Concurrent LLM requests
 
     # Paths
     RESULTS_DIR: str = "thesis_results"

@@ -9,7 +9,7 @@ import sys
 # Suppress tokenizers parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from .benchmarks.hotpotqa_official import run_hotpotqa_pipeline
+from .benchmarks.hotpotqa import run_hotpotqa_llm_only_pipeline, run_hotpotqa_pipeline
 from .benchmarks.rag_bench import run_benchmark_pipeline, run_llm_only_pipeline
 from .config import Config
 from .core.rag import RAGSystem
@@ -59,12 +59,17 @@ def benchmark_command(args):
 
 def hotpotqa_command(args):
     """Run official HotPotQA benchmark evaluation."""
-    run_hotpotqa_pipeline(
-        force_reload=args.force_reload,
-        max_samples=args.max_samples,
-        retrieval_limit=args.retrieval_limit,
-        use_hyde=args.use_hyde,
-    )
+    if args.llm_only:
+        run_hotpotqa_llm_only_pipeline(
+            max_samples=args.max_samples,
+        )
+    else:
+        run_hotpotqa_pipeline(
+            force_reload=args.force_reload,
+            max_samples=args.max_samples,
+            retrieval_limit=args.retrieval_limit,
+            use_hyde=args.use_hyde,
+        )
 
 
 def main():
@@ -113,6 +118,8 @@ def main():
                                 help=f'Documents to retrieve (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
     hotpotqa_parser.add_argument('--use-hyde', action='store_true',
                                 help='Use HyDE RAG instead of standard RAG')
+    hotpotqa_parser.add_argument('--llm-only', action='store_true',
+                                help='Run LLM-only baseline (no RAG)')
 
     args = parser.parse_args()
 
