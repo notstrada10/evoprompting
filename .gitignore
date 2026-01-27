@@ -226,3 +226,4 @@ queries/
 QUICKSTART.md
 Query.sql
 \nthesis_results/
+plot_results.py

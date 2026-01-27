@@ -226,7 +226,7 @@ Passage:"""
         self.vector_search.close()
 
 
-system_prompt = """
+system_prompt2 = """
     You are a helpful assistant that answers questions based on the provided documents.
 
     Rules:
