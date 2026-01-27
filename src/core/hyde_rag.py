@@ -59,12 +59,12 @@ class HyDERAGSystem:
     def _build_hypothesis_messages(self, query: str) -> list[dict]:
         """Build the messages for hypothesis generation."""
         system_prompt = """You generate hypothetical document passages that would answer a question.
-Write a detailed, factual-sounding passage as it would appear in a knowledge base or encyclopedia.
-Be specific with names, dates, and details. Write directly without preamble."""
+        Write a detailed, factual-sounding passage as it would appear in a knowledge base or encyclopedia.
+        Be specific with names, dates, and details. Write directly without preamble."""
 
         user_prompt = f"""Question: {query}
 
-Passage:"""
+        Passage:"""
 
         return [
             {"role": "system", "content": system_prompt},

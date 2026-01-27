@@ -142,7 +142,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-# TODO: Sisetmare codice per hotpot e per i prompt e avere i risultati :)

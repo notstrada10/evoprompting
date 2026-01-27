@@ -376,7 +376,13 @@ async def process_single_hotpotqa_sample_llm_only(
     if not question or not ground_truth:
         return None
 
-    system_prompt = "You are a helpful assistant. Answer the question concisely and accurately."
+    system_prompt = """You are a precise question-answering system.
+
+Instructions:
+- Be concise: use the minimum words necessary
+- If the answer is a name, date, number, or short phrase, respond with just that
+- Never explain your reasoning or add context"""
+
     user_prompt = f"Question: {question}\n\nAnswer:"
 
     try:

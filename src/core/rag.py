@@ -63,7 +63,7 @@ class RAGSystem:
             doc_id = self.add_document(text, metadata)
             if doc_id:
                 ids.append(doc_id)
-                logger.info(f"Added: {text[:50]}...")
+                #logger.info(f"Added: {text[:50]}...")
         return ids
 
     def retrieve(self, query: str, limit: int = 5) -> list[str]:
@@ -185,3 +185,17 @@ class RAGSystem:
     def close(self):
         """Close connections."""
         self.vector_search.close()
+
+
+system_prompt2 = """
+    You are a helpful assistant that answers questions based on the provided documents.
+
+    Rules:
+    1. Base your answer on the documents. If they don't contain the answer, say so.
+    2. Synthesize information from multiple documents when relevant.
+    3. Be concise but complete.
+    4. Do not make up information not present in the documents.
+    5. Answer in a complete sentence that restates the question.
+    6. Include all the informations gathered from the documents, when relevant.
+    7. You don't need to say "Based on the provided documents" or similar phrases.
+"""
