@@ -5,28 +5,21 @@ This module loads the official HotPotQA dev-distractor dataset and stores it
 in a separate table from the ragbench subset for clean comparison.
 """
 import asyncio
-import json
 import logging
-import os
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional
 
 from datasets import load_dataset
 
 from ..config import Config
-from ..core.db import VectorDatabase
-from ..core.embeddings import EmbeddingService
 from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
-from ..core.vector_search import VectorSearch
 from .rag_bench import (
     calculate_adherence,
     calculate_context_relevance,
     calculate_context_utilization,
     calculate_exact_match,
     calculate_f1,
-    compute_summary,
     normalize_answer,
     print_results,
     save_results,
@@ -45,99 +38,53 @@ class HotPotQAConfig:
     table_name: str = HOTPOTQA_TABLE
 
 
+# =============================================================================
+# Dataset Loading
+# =============================================================================
+
 def load_hotpotqa_dataset(split: str = "validation"):
-    """
-    Load official HotPotQA dataset from HuggingFace.
-
-    Args:
-        split: Dataset split to load. Use "validation" for dev set.
-               Options: "train", "validation"
-
-    Returns:
-        HuggingFace dataset object
-    """
+    """Load official HotPotQA dataset from HuggingFace."""
     logger.info(f"Loading official HotPotQA dataset ({split} split)...")
-
-    # Load the distractor setting (standard evaluation)
     dataset = load_dataset("hotpot_qa", "distractor", split=split)
-
     logger.info(f"Loaded {len(dataset)} samples")
     return dataset
 
 
 def extract_paragraphs_from_item(item) -> List[str]:
-    """
-    Extract supporting paragraphs from a HotPotQA item.
-
-    The official HotPotQA format has:
-    - context: dict with 'title' and 'sentences' lists
-    - supporting_facts: dict with 'title' and 'sent_id' for gold facts
-
-    Args:
-        item: A single HotPotQA dataset item
-
-    Returns:
-        List of paragraph strings (title + sentences combined)
-    """
+    """Extract all paragraphs from a HotPotQA item (title + sentences)."""
     paragraphs = []
-
     context = item.get("context", {})
     titles = context.get("title", [])
     sentences_list = context.get("sentences", [])
-
     for title, sentences in zip(titles, sentences_list):
-        # Combine title and sentences into a single paragraph
-        paragraph = f"{title}: {' '.join(sentences)}"
-        paragraphs.append(paragraph)
-
+        paragraphs.append(f"{title}: {' '.join(sentences)}")
     return paragraphs
 
 
 def get_gold_paragraphs(item) -> List[str]:
-    """
-    Extract gold (supporting) paragraphs from a HotPotQA item.
-
-    Args:
-        item: A single HotPotQA dataset item
-
-    Returns:
-        List of gold paragraph strings
-    """
+    """Extract gold (supporting) paragraphs from a HotPotQA item."""
     gold_paragraphs = []
-
     context = item.get("context", {})
     titles = context.get("title", [])
     sentences_list = context.get("sentences", [])
-
     supporting_facts = item.get("supporting_facts", {})
     gold_titles = set(supporting_facts.get("title", []))
-
     for title, sentences in zip(titles, sentences_list):
         if title in gold_titles:
-            paragraph = f"{title}: {' '.join(sentences)}"
-            gold_paragraphs.append(paragraph)
-
+            gold_paragraphs.append(f"{title}: {' '.join(sentences)}")
     return gold_paragraphs
 
 
-def prepare_hotpotqa_knowledge_base(
-    vector_search: VectorSearch,
-    dataset,
-    force_reload: bool = False
-) -> None:
-    """
-    Extract and add documents to knowledge base for official HotPotQA.
+# =============================================================================
+# Knowledge Base
+# =============================================================================
 
-    Args:
-        vector_search: VectorSearch instance (using hotpotqa table)
-        dataset: HotPotQA dataset
-        force_reload: Whether to clear existing data first
-    """
+def prepare_hotpotqa_knowledge_base(vector_search, dataset, force_reload: bool = False) -> None:
+    """Extract and add documents to knowledge base for official HotPotQA."""
     current_count = vector_search.count()
 
     if current_count > 0 and not force_reload:
         logger.info(f"Knowledge base already contains {current_count} documents, skipping load")
-        logger.info("Use --force-reload to clear and reload the database")
         return
 
     if force_reload and current_count > 0:
@@ -145,12 +92,9 @@ def prepare_hotpotqa_knowledge_base(
         vector_search.delete_all()
 
     logger.info("Preparing knowledge base from official HotPotQA...")
-
-    # Collect unique paragraphs
     documents_added = set()
     for item in dataset:
-        paragraphs = extract_paragraphs_from_item(item)
-        for para in paragraphs:
+        for para in extract_paragraphs_from_item(item):
             if para.strip():
                 documents_added.add(para.strip())
 
@@ -160,92 +104,25 @@ def prepare_hotpotqa_knowledge_base(
     logger.info(f"Added {len(documents_added)} documents to knowledge base")
 
 
-class HotPotQARAGSystem(RAGSystem):
-    """RAG system configured for official HotPotQA table."""
+# =============================================================================
+# Sample Processing
+# =============================================================================
 
-    def __init__(self, table_name: str = HOTPOTQA_TABLE):
-        self.table_name = table_name
-        super().__init__()
-
-    def setup(self) -> None:
-        """Initialize the RAG system with HotPotQA-specific table."""
-        self.db = VectorDatabase(table_name=self.table_name)
-        self.db.connect()
-        self.db.setup_database()
-
-        self.embedding_service = EmbeddingService()
-        self.vector_search = VectorSearch(self.db, self.embedding_service)
-
-        from openai import AsyncOpenAI, OpenAI
-        self.llm = OpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
-        self.async_llm = AsyncOpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
-        self.model = Config.DEEPSEEK_MODEL
-
-        logger.info(f"HotPotQA RAG system initialized with table '{self.table_name}'")
-
-
-class HotPotQAHyDERAGSystem(HyDERAGSystem):
-    """HyDE RAG system configured for official HotPotQA table."""
-
-    def __init__(self, table_name: str = HOTPOTQA_TABLE):
-        self.table_name = table_name
-        super().__init__()
-
-    def setup(self) -> None:
-        """Initialize the HyDE RAG system with HotPotQA-specific table."""
-        self.db = VectorDatabase(table_name=self.table_name)
-        self.db.connect()
-        self.db.setup_database()
-
-        self.embedding_service = EmbeddingService()
-        self.vector_search = VectorSearch(self.db, self.embedding_service)
-
-        from openai import AsyncOpenAI, OpenAI
-        self.llm = OpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
-        self.async_llm = AsyncOpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
-        self.model = Config.DEEPSEEK_MODEL
-
-        logger.info(f"HotPotQA HyDE RAG system initialized with table '{self.table_name}'")
-
-
-async def process_single_hotpotqa_sample(
-    rag,
-    item,
-    idx: int,
-    retrieval_limit: int
-):
-    """Process a single HotPotQA sample asynchronously."""
+async def process_sample(rag, item, idx: int, retrieval_limit: int):
+    """Process a single HotPotQA sample with RAG."""
     question = item.get("question", "")
     ground_truth = item.get("answer", "")
-
     if not question or not ground_truth:
         return None
 
     gold_docs = get_gold_paragraphs(item)
-
     result = await rag.async_ask(question, limit=retrieval_limit)
     predicted = result["answer"]
     retrieved_docs = result["sources"]
 
-    # Calculate metrics
     exact = calculate_exact_match(predicted, ground_truth)
     contains = normalize_answer(ground_truth) in normalize_answer(predicted)
     f1, precision, recall = calculate_f1(predicted, ground_truth)
-    relevance = calculate_context_relevance(retrieved_docs, gold_docs)
-    utilization = calculate_context_utilization(predicted, retrieved_docs)
-    adherence = calculate_adherence(predicted, retrieved_docs)
 
     return {
         "id": item.get("id", idx),
@@ -257,122 +134,19 @@ async def process_single_hotpotqa_sample(
         "f1": f1,
         "precision": precision,
         "recall": recall,
-        "relevance": relevance,
-        "utilization": utilization,
-        "adherence": adherence,
+        "relevance": calculate_context_relevance(retrieved_docs, gold_docs),
+        "utilization": calculate_context_utilization(predicted, retrieved_docs),
+        "adherence": calculate_adherence(predicted, retrieved_docs),
         "sources": retrieved_docs,
-        "type": item.get("type", "unknown"),  # bridge or comparison
-        "level": item.get("level", "unknown"),  # easy, medium, hard
+        "type": item.get("type", "unknown"),
+        "level": item.get("level", "unknown"),
     }
 
 
-async def run_hotpotqa_benchmark_async(
-    rag,
-    dataset,
-    config: HotPotQAConfig,
-    max_samples: Optional[int] = None,
-    retrieval_limit: Optional[int] = None,
-    use_hyde: bool = False,
-) -> Dict:
-    """Run official HotPotQA benchmark with concurrent LLM requests."""
-    retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
-    logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
-
-    results = {
-        "dataset": config.name,
-        "total": 0,
-        "exact_match": 0,
-        "contains": 0,
-        "f1_scores": [],
-        "precision_scores": [],
-        "recall_scores": [],
-        "relevance_scores": [],
-        "utilization_scores": [],
-        "adherence_scores": [],
-        "predictions": [],
-        "by_type": {"bridge": [], "comparison": []},
-        "by_level": {"easy": [], "medium": [], "hard": []},
-        "metadata": {
-            "retrieval_limit": retrieval_limit,
-            "max_samples": max_samples,
-            "use_hyde": use_hyde,
-            "embedding_model": Config.EMBEDDING_MODEL,
-            "llm_model": Config.DEEPSEEK_MODEL,
-            "chunk_size": Config.CHUNK_SIZE,
-            "chunk_overlap": Config.CHUNK_OVERLAP,
-            "table_name": config.table_name,
-        }
-    }
-
-    samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
-    samples = list(dataset)[:samples_to_test]
-
-    for batch_start in range(0, len(samples), Config.BATCH_SIZE):
-        batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
-        batch = samples[batch_start:batch_end]
-
-        tasks = [
-            process_single_hotpotqa_sample(rag, item, batch_start + i, retrieval_limit)
-            for i, item in enumerate(batch)
-        ]
-
-        batch_results = await asyncio.gather(*tasks)
-
-        for prediction_entry in batch_results:
-            if prediction_entry is None:
-                continue
-
-            results["exact_match"] += int(prediction_entry["exact_match"])
-            results["contains"] += int(prediction_entry["contains"])
-            results["f1_scores"].append(prediction_entry["f1"])
-            results["precision_scores"].append(prediction_entry["precision"])
-            results["recall_scores"].append(prediction_entry["recall"])
-            results["relevance_scores"].append(prediction_entry["relevance"])
-            results["utilization_scores"].append(prediction_entry["utilization"])
-            results["adherence_scores"].append(prediction_entry["adherence"])
-            results["predictions"].append(prediction_entry)
-            results["total"] += 1
-
-            # Track by question type and difficulty
-            q_type = prediction_entry.get("type", "unknown")
-            q_level = prediction_entry.get("level", "unknown")
-            if q_type in results["by_type"]:
-                results["by_type"][q_type].append(prediction_entry["f1"])
-            if q_level in results["by_level"]:
-                results["by_level"][q_level].append(prediction_entry["f1"])
-
-        if results["total"] > 0:
-            avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-            avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
-            logger.info(f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}")
-
-    return results
-
-
-def run_hotpotqa_benchmark(
-    rag,
-    dataset,
-    config: HotPotQAConfig,
-    max_samples: Optional[int] = None,
-    retrieval_limit: Optional[int] = None,
-    use_hyde: bool = False,
-) -> Dict:
-    """Run official HotPotQA benchmark."""
-    return asyncio.run(run_hotpotqa_benchmark_async(
-        rag, dataset, config, max_samples, retrieval_limit, use_hyde
-    ))
-
-
-async def process_single_hotpotqa_sample_llm_only(
-    async_llm,
-    model: str,
-    item,
-    idx: int,
-):
+async def process_sample_llm_only(async_llm, model: str, item, idx: int):
     """Process a single HotPotQA sample using LLM only (no RAG)."""
     question = item.get("question", "")
     ground_truth = item.get("answer", "")
-
     if not question or not ground_truth:
         return None
 
@@ -383,13 +157,11 @@ Instructions:
 - If the answer is a name, date, number, or short phrase, respond with just that
 - Never explain your reasoning or add context"""
 
-    user_prompt = f"Question: {question}\n\nAnswer:"
-
     try:
         response = await async_llm.chat.completions.create(
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
+                {"role": "user", "content": f"Question: {question}\n\nAnswer:"},
             ],
             model=model,
             temperature=Config.LLM_TEMPERATURE,
@@ -418,39 +190,61 @@ Instructions:
     }
 
 
-async def run_hotpotqa_llm_only_benchmark_async(
+# =============================================================================
+# Benchmark Runner
+# =============================================================================
+
+async def run_hotpotqa_benchmark_async(
     dataset,
     config: HotPotQAConfig,
     max_samples: Optional[int] = None,
+    rag=None,
+    retrieval_limit: Optional[int] = None,
 ) -> Dict:
-    """Run HotPotQA LLM-only benchmark (baseline without RAG)."""
-    from openai import AsyncOpenAI
+    """
+    Run HotPotQA benchmark. If rag is provided, runs RAG mode; otherwise LLM-only baseline.
+    """
+    is_rag = rag is not None
+    score_keys = ["f1", "precision", "recall"]
+    if is_rag:
+        score_keys += ["relevance", "utilization", "adherence"]
+        retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
 
-    async_llm = AsyncOpenAI(
-        api_key=Config.DEEPSEEK_API_KEY,
-        base_url=Config.DEEPSEEK_BASE_URL
-    )
-    model = Config.DEEPSEEK_MODEL
+    logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
 
-    logger.info(f"Running {config.name} LLM-ONLY baseline with {Config.BATCH_SIZE} concurrent requests...")
+    if not is_rag:
+        from openai import AsyncOpenAI
+        async_llm = AsyncOpenAI(
+            api_key=Config.DEEPSEEK_API_KEY,
+            base_url=Config.DEEPSEEK_BASE_URL
+        )
+        model = Config.DEEPSEEK_MODEL
 
     results = {
-        "dataset": config.name + "-llm-only",
+        "dataset": config.name if is_rag else config.name + "-llm-only",
         "total": 0,
         "exact_match": 0,
         "contains": 0,
-        "f1_scores": [],
-        "precision_scores": [],
-        "recall_scores": [],
         "predictions": [],
         "by_type": {"bridge": [], "comparison": []},
         "by_level": {"easy": [], "medium": [], "hard": []},
         "metadata": {
             "max_samples": max_samples,
-            "llm_model": model,
-            "mode": "llm-only-baseline",
-        }
+            "llm_model": Config.DEEPSEEK_MODEL,
+            "mode": "rag" if is_rag else "llm-only-baseline",
+            "table_name": config.table_name,
+        },
     }
+    if is_rag:
+        results["metadata"].update({
+            "retrieval_limit": retrieval_limit,
+            "embedding_model": Config.EMBEDDING_MODEL,
+            "chunk_size": Config.CHUNK_SIZE,
+            "chunk_overlap": Config.CHUNK_OVERLAP,
+        })
+
+    for key in score_keys:
+        results[f"{key}_scores"] = []
 
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
@@ -459,37 +253,111 @@ async def run_hotpotqa_llm_only_benchmark_async(
         batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
         batch = samples[batch_start:batch_end]
 
-        tasks = [
-            process_single_hotpotqa_sample_llm_only(async_llm, model, item, batch_start + i)
-            for i, item in enumerate(batch)
-        ]
+        if is_rag:
+            tasks = [
+                process_sample(rag, item, batch_start + i, retrieval_limit)
+                for i, item in enumerate(batch)
+            ]
+        else:
+            tasks = [
+                process_sample_llm_only(async_llm, model, item, batch_start + i)
+                for i, item in enumerate(batch)
+            ]
 
         batch_results = await asyncio.gather(*tasks)
 
-        for prediction_entry in batch_results:
-            if prediction_entry is None:
+        for entry in batch_results:
+            if entry is None:
                 continue
 
-            results["exact_match"] += int(prediction_entry["exact_match"])
-            results["contains"] += int(prediction_entry["contains"])
-            results["f1_scores"].append(prediction_entry["f1"])
-            results["precision_scores"].append(prediction_entry["precision"])
-            results["recall_scores"].append(prediction_entry["recall"])
-            results["predictions"].append(prediction_entry)
+            results["exact_match"] += int(entry["exact_match"])
+            results["contains"] += int(entry["contains"])
+            for key in score_keys:
+                results[f"{key}_scores"].append(entry[key])
+            results["predictions"].append(entry)
             results["total"] += 1
 
-            q_type = prediction_entry.get("type", "unknown")
-            q_level = prediction_entry.get("level", "unknown")
+            q_type = entry.get("type", "unknown")
+            q_level = entry.get("level", "unknown")
             if q_type in results["by_type"]:
-                results["by_type"][q_type].append(prediction_entry["f1"])
+                results["by_type"][q_type].append(entry["f1"])
             if q_level in results["by_level"]:
-                results["by_level"][q_level].append(prediction_entry["f1"])
+                results["by_level"][q_level].append(entry["f1"])
 
         if results["total"] > 0:
             avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-            logger.info(f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}")
+            progress_msg = f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}"
+            if "adherence_scores" in results and results["adherence_scores"]:
+                avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
+                progress_msg += f" | Adherence: {avg_adherence:.3f}"
+            logger.info(progress_msg)
 
     return results
+
+
+def _print_breakdown(results: Dict) -> None:
+    """Print results breakdown by question type and difficulty level."""
+    logger.info("\nResults by question type:")
+    for q_type, scores in results["by_type"].items():
+        if scores:
+            logger.info(f"  {q_type}: F1={sum(scores)/len(scores):.3f} (n={len(scores)})")
+
+    logger.info("\nResults by difficulty level:")
+    for level, scores in results["by_level"].items():
+        if scores:
+            logger.info(f"  {level}: F1={sum(scores)/len(scores):.3f} (n={len(scores)})")
+
+
+# =============================================================================
+# Pipelines
+# =============================================================================
+
+def run_hotpotqa_pipeline(
+    force_reload: bool = False,
+    max_samples: int = 50,
+    retrieval_limit: Optional[int] = None,
+    use_hyde: bool = False,
+):
+    """Run official HotPotQA benchmark pipeline."""
+    config = HotPotQAConfig()
+
+    logger.info(f"{config.name.upper()} Evaluation")
+    logger.info("=" * 60)
+
+    if use_hyde:
+        rag = HyDERAGSystem(table_name=config.table_name)
+        rag_type = "HyDE"
+    else:
+        rag = RAGSystem(table_name=config.table_name)
+        rag_type = "standard"
+
+    logger.info(f"Using {rag_type} RAG system with table '{config.table_name}'")
+    rag.setup()
+
+    try:
+        if force_reload or rag.vector_search.count() == 0:
+            dataset = load_hotpotqa_dataset(split="validation")
+            prepare_hotpotqa_knowledge_base(rag.vector_search, dataset, force_reload=force_reload)
+        else:
+            logger.info(f"Knowledge base already loaded ({rag.vector_search.count()} documents)")
+
+        eval_dataset = load_hotpotqa_dataset(split="validation")
+        logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
+
+        results = asyncio.run(run_hotpotqa_benchmark_async(
+            eval_dataset, config,
+            max_samples=max_samples,
+            rag=rag,
+            retrieval_limit=retrieval_limit,
+        ))
+
+        _print_breakdown(results)
+        print_results(results)
+        save_results(results)
+
+    finally:
+        rag.close()
+        logger.info("\nBenchmark complete")
 
 
 def run_hotpotqa_llm_only_pipeline(max_samples: int = 50):
@@ -502,96 +370,12 @@ def run_hotpotqa_llm_only_pipeline(max_samples: int = 50):
     eval_dataset = load_hotpotqa_dataset(split="validation")
     logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
 
-    results = asyncio.run(run_hotpotqa_llm_only_benchmark_async(
+    results = asyncio.run(run_hotpotqa_benchmark_async(
         eval_dataset, config, max_samples=max_samples
     ))
 
-    logger.info("\nResults by question type:")
-    for q_type, scores in results["by_type"].items():
-        if scores:
-            avg = sum(scores) / len(scores)
-            logger.info(f"  {q_type}: F1={avg:.3f} (n={len(scores)})")
-
-    logger.info("\nResults by difficulty level:")
-    for level, scores in results["by_level"].items():
-        if scores:
-            avg = sum(scores) / len(scores)
-            logger.info(f"  {level}: F1={avg:.3f} (n={len(scores)})")
-
+    _print_breakdown(results)
     print_results(results)
     save_results(results)
 
     logger.info("\nBenchmark complete")
-
-
-def run_hotpotqa_pipeline(
-    force_reload: bool = False,
-    max_samples: int = 50,
-    retrieval_limit: Optional[int] = None,
-    use_hyde: bool = False,
-):
-    """
-    Run official HotPotQA benchmark pipeline.
-
-    Args:
-        force_reload: Clear and reload the knowledge base
-        max_samples: Maximum number of samples to evaluate
-        retrieval_limit: Number of documents to retrieve
-        use_hyde: Use HyDE RAG instead of standard RAG
-    """
-    config = HotPotQAConfig()
-
-    logger.info(f"{config.name.upper()} Evaluation")
-    logger.info("=" * 60)
-
-    # Initialize RAG system with HotPotQA table
-    if use_hyde:
-        rag = HotPotQAHyDERAGSystem(table_name=config.table_name)
-        rag_type = "HyDE"
-    else:
-        rag = HotPotQARAGSystem(table_name=config.table_name)
-        rag_type = "standard"
-
-    logger.info(f"Using {rag_type} RAG system with table '{config.table_name}'")
-    rag.setup()
-
-    try:
-        # Load and prepare knowledge base
-        if force_reload or rag.vector_search.count() == 0:
-            logger.info("Loading official HotPotQA dev-distractor into knowledge base...")
-            dataset = load_hotpotqa_dataset(split="validation")
-            prepare_hotpotqa_knowledge_base(rag.vector_search, dataset, force_reload=force_reload)
-        else:
-            logger.info(f"Knowledge base already loaded ({rag.vector_search.count()} documents)")
-
-        # Load evaluation dataset
-        eval_dataset = load_hotpotqa_dataset(split="validation")
-        logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
-
-        # Run benchmark
-        results = run_hotpotqa_benchmark(
-            rag, eval_dataset, config,
-            max_samples=max_samples,
-            retrieval_limit=retrieval_limit,
-            use_hyde=use_hyde,
-        )
-
-        # Print breakdown by type and level
-        logger.info("\nResults by question type:")
-        for q_type, scores in results["by_type"].items():
-            if scores:
-                avg = sum(scores) / len(scores)
-                logger.info(f"  {q_type}: F1={avg:.3f} (n={len(scores)})")
-
-        logger.info("\nResults by difficulty level:")
-        for level, scores in results["by_level"].items():
-            if scores:
-                avg = sum(scores) / len(scores)
-                logger.info(f"  {level}: F1={avg:.3f} (n={len(scores)})")
-
-        print_results(results)
-        save_results(results)
-
-    finally:
-        rag.close()
-        logger.info("\nBenchmark complete")

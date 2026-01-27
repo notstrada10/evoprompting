@@ -278,7 +278,6 @@ async def process_single_sample_llm_only(async_llm, model: str, item, config: Da
     except Exception as e:
         predicted = f"Error: {e}"
 
-    # Calculate metrics
     exact = calculate_exact_match(predicted, ground_truth)
     contains = normalize_answer(ground_truth) in normalize_answer(predicted)
     f1, precision, recall = calculate_f1(predicted, ground_truth)
@@ -309,7 +308,6 @@ async def process_single_sample(rag, item, config: DatasetConfig, idx: int, retr
     predicted = result['answer']
     retrieved_docs = result['sources']
 
-    # Calculate metrics (using official HotPotQA evaluation)
     adherence = calculate_adherence(predicted, retrieved_docs)
     exact = calculate_exact_match(predicted, ground_truth)
     contains = normalize_answer(ground_truth) in normalize_answer(predicted)
@@ -340,101 +338,65 @@ async def process_single_sample(rag, item, config: DatasetConfig, idx: int, retr
     return prediction_entry
 
 
-async def run_llm_only_benchmark_async(dataset, config: DatasetConfig, max_samples: int = None) -> Dict:
-    """Run LLM-only benchmark (baseline without RAG)."""
-    from openai import AsyncOpenAI
+async def run_benchmark_async(
+    dataset,
+    config: DatasetConfig,
+    max_samples: int = None,
+    rag=None,
+    retrieval_limit: int = None,
+    use_llm_judge: bool = False,
+) -> Dict:
+    """
+    Run benchmark evaluation. If rag is provided, runs RAG mode; otherwise LLM-only baseline.
 
-    async_llm = AsyncOpenAI(
-        api_key=Config.DEEPSEEK_API_KEY,
-        base_url=Config.DEEPSEEK_BASE_URL
-    )
-    model = Config.DEEPSEEK_MODEL
+    Args:
+        dataset: The evaluation dataset.
+        config: Dataset configuration.
+        max_samples: Max samples to evaluate.
+        rag: RAG system instance. If None, runs LLM-only baseline.
+        retrieval_limit: Number of documents to retrieve (RAG mode only).
+        use_llm_judge: Whether to use LLM judge (RAG mode only).
+    """
+    is_rag = rag is not None
+    score_keys = ["f1", "precision", "recall"]
+    if is_rag:
+        score_keys += ["relevance", "utilization", "adherence"]
+        retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
 
-    logger.info(f"Running {config.name} LLM-ONLY baseline with {Config.BATCH_SIZE} concurrent requests...")
-
-    results = {
-        "dataset": config.name + "-llm-only",
-        "total": 0,
-        "exact_match": 0,
-        "contains": 0,
-        "f1_scores": [],
-        "precision_scores": [],
-        "recall_scores": [],
-        "predictions": [],
-        "metadata": {
-            "max_samples": max_samples,
-            "llm_model": model,
-            "mode": "llm-only-baseline",
-        }
-    }
-
-    samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
-    samples = list(dataset)[:samples_to_test]
-
-    for batch_start in range(0, len(samples), Config.BATCH_SIZE):
-        batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
-        batch = samples[batch_start:batch_end]
-
-        tasks = [
-            process_single_sample_llm_only(async_llm, model, item, config, batch_start + i)
-            for i, item in enumerate(batch)
-        ]
-
-        batch_results = await asyncio.gather(*tasks)
-
-        for prediction_entry in batch_results:
-            if prediction_entry is None:
-                continue
-
-            results["exact_match"] += int(prediction_entry["exact_match"])
-            results["contains"] += int(prediction_entry["contains"])
-            results["f1_scores"].append(prediction_entry["f1"])
-            results["precision_scores"].append(prediction_entry["precision"])
-            results["recall_scores"].append(prediction_entry["recall"])
-            results["predictions"].append(prediction_entry)
-            results["total"] += 1
-
-        if results["total"] > 0:
-            avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-            logger.info(f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}")
-
-    return results
-
-
-def run_llm_only_benchmark(dataset, config: DatasetConfig, max_samples: int = None) -> Dict:
-    """Run LLM-only benchmark (baseline)."""
-    return asyncio.run(run_llm_only_benchmark_async(dataset, config, max_samples))
-
-
-async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: int = None,
-                              retrieval_limit: int = None, use_llm_judge: bool = False,
-                              use_hyde: bool = False) -> Dict:
-    """Run RAG benchmark with concurrent LLM requests."""
-    retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
     logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
+
+    # Setup LLM-only client if needed
+    if not is_rag:
+        from openai import AsyncOpenAI
+        async_llm = AsyncOpenAI(
+            api_key=Config.DEEPSEEK_API_KEY,
+            base_url=Config.DEEPSEEK_BASE_URL
+        )
+        model = Config.DEEPSEEK_MODEL
 
     results = {
         "dataset": config.name,
         "total": 0,
         "exact_match": 0,
         "contains": 0,
-        "f1_scores": [],
-        "precision_scores": [],
-        "recall_scores": [],
-        "relevance_scores": [],
-        "utilization_scores": [],
-        "adherence_scores": [],
         "predictions": [],
         "metadata": {
-            "retrieval_limit": retrieval_limit,
             "max_samples": max_samples,
-            "use_hyde": use_hyde,
-            "embedding_model": Config.EMBEDDING_MODEL,
             "llm_model": Config.DEEPSEEK_MODEL,
+            "mode": "rag" if is_rag else "llm-only-baseline",
+        },
+    }
+    if is_rag:
+        results["metadata"].update({
+            "retrieval_limit": retrieval_limit,
+            "use_llm_judge": use_llm_judge,
+            "embedding_model": Config.EMBEDDING_MODEL,
             "chunk_size": Config.CHUNK_SIZE,
             "chunk_overlap": Config.CHUNK_OVERLAP,
-        }
-    }
+        })
+
+    for key in score_keys:
+        results[f"{key}_scores"] = []
 
     if use_llm_judge:
         results["llm_judge_scores"] = []
@@ -443,45 +405,44 @@ async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: 
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
 
-    # Process in batches
     for batch_start in range(0, len(samples), Config.BATCH_SIZE):
         batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
         batch = samples[batch_start:batch_end]
 
-        # Create async tasks for this batch
-        tasks = [
-            process_single_sample(rag, item, config, batch_start + i, retrieval_limit, use_llm_judge)
-            for i, item in enumerate(batch)
-        ]
+        if is_rag:
+            tasks = [
+                process_single_sample(rag, item, config, batch_start + i, retrieval_limit, use_llm_judge)
+                for i, item in enumerate(batch)
+            ]
+        else:
+            tasks = [
+                process_single_sample_llm_only(async_llm, model, item, config, batch_start + i)
+                for i, item in enumerate(batch)
+            ]
 
-        # Run batch concurrently
         batch_results = await asyncio.gather(*tasks)
 
-        # Process results
-        for prediction_entry in batch_results:
-            if prediction_entry is None:
+        for entry in batch_results:
+            if entry is None:
                 continue
 
-            results["exact_match"] += int(prediction_entry["exact_match"])
-            results["contains"] += int(prediction_entry["contains"])
-            results["f1_scores"].append(prediction_entry["f1"])
-            results["precision_scores"].append(prediction_entry["precision"])
-            results["recall_scores"].append(prediction_entry["recall"])
-            results["relevance_scores"].append(prediction_entry["relevance"])
-            results["utilization_scores"].append(prediction_entry["utilization"])
-            results["adherence_scores"].append(prediction_entry["adherence"])
-            results["predictions"].append(prediction_entry)
+            results["exact_match"] += int(entry["exact_match"])
+            results["contains"] += int(entry["contains"])
+            for key in score_keys:
+                results[f"{key}_scores"].append(entry[key])
+            results["predictions"].append(entry)
             results["total"] += 1
 
-            if use_llm_judge and "llm_judge" in prediction_entry:
-                results["llm_judge_scores"].append(prediction_entry["llm_judge"]["score"])
-                results["llm_correct_count"] += int(prediction_entry["llm_judge"]["is_correct"])
+            if use_llm_judge and "llm_judge" in entry:
+                results["llm_judge_scores"].append(entry["llm_judge"]["score"])
+                results["llm_correct_count"] += int(entry["llm_judge"]["is_correct"])
 
-        # Log progress after each batch
         if results["total"] > 0:
-            avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
             avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
-            progress_msg = f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f} | Adherence: {avg_adherence:.3f}"
+            progress_msg = f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}"
+            if "adherence_scores" in results and results["adherence_scores"]:
+                avg_adherence = sum(results["adherence_scores"]) / len(results["adherence_scores"])
+                progress_msg += f" | Adherence: {avg_adherence:.3f}"
             if use_llm_judge:
                 progress_msg += f" | LLM Judge: {results['llm_correct_count'] / results['total']:.1%}"
             logger.info(progress_msg)
@@ -489,11 +450,9 @@ async def run_benchmark_async(rag, dataset, config: DatasetConfig, max_samples: 
     return results
 
 
-def run_benchmark(rag, dataset, config: DatasetConfig, max_samples: int = None,
-                  retrieval_limit: int = None, use_llm_judge: bool = False,
-                  use_hyde: bool = False) -> Dict:
-    """Run RAG benchmark with concurrent LLM requests."""
-    return asyncio.run(run_benchmark_async(rag, dataset, config, max_samples, retrieval_limit, use_llm_judge, use_hyde))
+def run_benchmark(dataset, config, **kwargs) -> Dict:
+    """Sync wrapper for run_benchmark_async."""
+    return asyncio.run(run_benchmark_async(dataset, config, **kwargs))
 
 
 # =============================================================================
@@ -587,6 +546,18 @@ def save_results(results: Dict, output_dir: str = None) -> None:
 # Main
 # =============================================================================
 
+def _make_ragbench_config(subset: str) -> DatasetConfig:
+    """Create a RAGBench dataset config."""
+    return DatasetConfig(
+        name=f"ragbench-{subset}",
+        source=Config.RAGBENCH_DATASET,
+        subset=subset,
+        question_field="question",
+        answer_field="response",
+        documents_field="documents",
+    )
+
+
 def run_benchmark_pipeline(
     subset: str = "hotpotqa",
     force_reload: bool = False,
@@ -597,18 +568,11 @@ def run_benchmark_pipeline(
     use_hyde: bool = False,
 ):
     """Run RAG benchmark pipeline."""
-    config = DatasetConfig(
-        name=f"ragbench-{subset}",
-        source=Config.RAGBENCH_DATASET,
-        subset=subset,
-        question_field="question",
-        answer_field="response",
-        documents_field="documents",
-    )
+    config = _make_ragbench_config(subset)
+    retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("="*60)
 
-    # Initialize RAG system
     if use_hyde:
         rag = HyDERAGSystem()
         rag_type = "HyDE"
@@ -619,7 +583,6 @@ def run_benchmark_pipeline(
     rag.setup()
 
     try:
-        # Load knowledge base
         if force_reload or rag.vector_search.count() == 0:
             logger.info("Loading all splits into knowledge base...")
             all_datasets = []
@@ -638,16 +601,15 @@ def run_benchmark_pipeline(
         else:
             logger.info(f"Knowledge base already loaded ({rag.vector_search.count()} documents)")
 
-        # Run benchmark
         eval_dataset = load_benchmark_dataset(config, split=eval_split)
         logger.info(f"Evaluating on {eval_split} split ({len(eval_dataset)} samples)")
 
         results = run_benchmark(
-            rag, eval_dataset, config,
+            eval_dataset, config,
             max_samples=max_samples,
+            rag=rag,
             retrieval_limit=retrieval_limit,
             use_llm_judge=use_llm_judge,
-            use_hyde=use_hyde,
         )
         print_results(results)
         save_results(results)
@@ -663,23 +625,15 @@ def run_llm_only_pipeline(
     eval_split: str = "test",
 ):
     """Run LLM-only baseline benchmark (no RAG)."""
-    config = DatasetConfig(
-        name=f"ragbench-{subset}",
-        source=Config.RAGBENCH_DATASET,
-        subset=subset,
-        question_field="question",
-        answer_field="response",
-        documents_field="documents",
-    )
+    config = _make_ragbench_config(subset)
+    config.name += "-llm-only"
     logger.info(f"{config.name.upper()} LLM-ONLY BASELINE")
     logger.info("="*60)
 
-    # Load evaluation dataset
     eval_dataset = load_benchmark_dataset(config, split=eval_split)
     logger.info(f"Evaluating on {eval_split} split ({len(eval_dataset)} samples)")
 
-    # Run LLM-only benchmark
-    results = run_llm_only_benchmark(eval_dataset, config, max_samples=max_samples)
+    results = run_benchmark(eval_dataset, config, max_samples=max_samples)
     print_results(results)
     save_results(results)
 

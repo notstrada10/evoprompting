@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 
 from ..config import Config
 from .vector_search import VectorSearch
@@ -15,25 +16,28 @@ class HyDERAGSystem:
     HyDE (Hypothetical Document Embeddings) RAG.
     """
 
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, table_name: str | None = None):
         """
         Initialize the HyDE RAG system.
 
         Args:
             model: Model to use for generation.
+            table_name: Database table name for embeddings.
         """
         if not Config.DEEPSEEK_API_KEY:
             raise ValueError("DEEPSEEK_API_KEY not found in environment variables")
-        self.llm = OpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
         self.async_llm = AsyncOpenAI(
             api_key=Config.DEEPSEEK_API_KEY,
             base_url=Config.DEEPSEEK_BASE_URL
         )
         self.model = model or Config.DEEPSEEK_MODEL
-        self.vector_search = VectorSearch()
+        if table_name:
+            from .db import VectorDatabase
+            db = VectorDatabase(table_name=table_name)
+            db.connect()
+            self.vector_search = VectorSearch(db=db)
+        else:
+            self.vector_search = VectorSearch()
 
     def setup(self):
         """Setup the database."""
@@ -97,7 +101,7 @@ class HyDERAGSystem:
             {"role": "user", "content": user_prompt},
         ]
 
-    def generate_hypothesis(self, query: str) -> str:
+    async def async_generate_hypothesis(self, query: str) -> str:
         """
         Generate a hypothetical document that would answer the query.
 
@@ -108,7 +112,7 @@ class HyDERAGSystem:
             Hypothetical answer text.
         """
         try:
-            response = self.llm.chat.completions.create(
+            response = await self.async_llm.chat.completions.create(
                 messages=self._build_hypothesis_messages(query),
                 model=self.model,
                 temperature=0.2,
@@ -118,6 +122,10 @@ class HyDERAGSystem:
         except Exception as e:
             logger.error(f"Error generating hypothesis: {e}")
             return query
+
+    def generate_hypothesis(self, query: str) -> str:
+        """Sync wrapper for async_generate_hypothesis."""
+        return asyncio.run(self.async_generate_hypothesis(query))
 
     def retrieve(self, query: str, limit: int = 5) -> list[str]:
         """
@@ -134,7 +142,7 @@ class HyDERAGSystem:
         results = self.vector_search.search(hypothesis, limit=limit)
         return [text for (id, text, similarity, metadata) in results]
 
-    def generate(self, query: str, context: list[str]) -> str:
+    async def async_generate(self, query: str, context: list[str]) -> str:
         """
         Generate final response from retrieved documents.
 
@@ -146,7 +154,7 @@ class HyDERAGSystem:
             Generated response.
         """
         try:
-            response = self.llm.chat.completions.create(
+            response = await self.async_llm.chat.completions.create(
                 messages=self._build_answer_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
@@ -156,14 +164,17 @@ class HyDERAGSystem:
         except Exception as e:
             return f"Error: {e}"
 
-    def ask(self, query: str, limit: int = 3) -> dict:
+    def generate(self, query: str, context: list[str]) -> str:
+        """Sync wrapper for async_generate."""
+        return asyncio.run(self.async_generate(query, context))
+
+    async def async_ask(self, query: str, limit: int = 3) -> dict:
         """
         Complete HyDE RAG pipeline:
 
-        1. Query Understanding: Parse user intent
-        2. Hypothesis Generation: Create hypothetical answer
-        3. Enhanced Retrieval: Search using hypothesis embedding
-        4. Response Generation: Generate answer from real documents
+        1. Hypothesis Generation: Create hypothetical answer
+        2. Enhanced Retrieval: Search using hypothesis embedding
+        3. Response Generation: Generate answer from real documents
 
         Args:
             query: User query.
@@ -172,54 +183,15 @@ class HyDERAGSystem:
         Returns:
             Dict with answer and documents used.
         """
-        # Retrieve using HyDE approach (hypothesis-based)
-        documents = self.retrieve(query, limit=limit)
-
-        # Generate final answer from real documents
-        answer = self.generate(query, documents)
-
-        return {"query": query, "answer": answer, "sources": documents}
-
-    async def async_generate_hypothesis(self, query: str) -> str:
-        """Async version of generate_hypothesis."""
-        try:
-            response = await self.async_llm.chat.completions.create(
-                messages=self._build_hypothesis_messages(query),
-                model=self.model,
-                temperature=0.2,
-                max_tokens=350
-            )
-            return response.choices[0].message.content or query
-        except Exception as e:
-            logger.error(f"Error generating hypothesis: {e}")
-            return query
-
-    async def async_generate(self, query: str, context: list[str]) -> str:
-        """Async version of generate."""
-        try:
-            response = await self.async_llm.chat.completions.create(
-                messages=self._build_answer_messages(query, context),
-                model=self.model,
-                temperature=Config.LLM_TEMPERATURE,
-                max_tokens=Config.MAX_TOKENS
-            )
-            return response.choices[0].message.content or ""
-        except Exception as e:
-            return f"Error: {e}"
-
-    async def async_ask(self, query: str, limit: int = 3) -> dict:
-        """Async version of ask for concurrent processing."""
-        # Generate hypothesis async
         hypothesis = await self.async_generate_hypothesis(query)
-
-        # Retrieve using hypothesis (sync - DB operation)
         results = self.vector_search.search(hypothesis, limit=limit)
         documents = [text for (id, text, similarity, metadata) in results]
-
-        # Generate final answer async
         answer = await self.async_generate(query, documents)
-
         return {"query": query, "answer": answer, "sources": documents}
+
+    def ask(self, query: str, limit: int = 3) -> dict:
+        """Sync wrapper for async_ask."""
+        return asyncio.run(self.async_ask(query, limit))
 
     def close(self):
         """Close connections."""

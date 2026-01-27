@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 
 from ..config import Config
 from .vector_search import VectorSearch
@@ -11,25 +12,28 @@ logger = logging.getLogger(__name__)
 
 
 class RAGSystem:
-    def __init__(self, model: str | None = None):
+    def __init__(self, model: str | None = None, table_name: str | None = None):
         """
         Initialize the RAG system.
 
         Args:
             model: Model to use for generation.
+            table_name: Database table name for embeddings.
         """
         if not Config.DEEPSEEK_API_KEY:
             raise ValueError("DEEPSEEK_API_KEY not found in environment variables")
-        self.llm = OpenAI(
-            api_key=Config.DEEPSEEK_API_KEY,
-            base_url=Config.DEEPSEEK_BASE_URL
-        )
         self.async_llm = AsyncOpenAI(
             api_key=Config.DEEPSEEK_API_KEY,
             base_url=Config.DEEPSEEK_BASE_URL
         )
         self.model = model or Config.DEEPSEEK_MODEL
-        self.vector_search = VectorSearch()
+        if table_name:
+            from .db import VectorDatabase
+            db = VectorDatabase(table_name=table_name)
+            db.connect()
+            self.vector_search = VectorSearch(db=db)
+        else:
+            self.vector_search = VectorSearch()
 
     def setup(self):
         """Setup the database."""
@@ -106,48 +110,9 @@ class RAGSystem:
             {"role": "user", "content": user_prompt},
         ]
 
-    def generate(self, query: str, context: list[str]) -> str:
-        """
-        Generate a response using the LLM.
-
-        Args:
-            query: User query.
-            context: List of relevant documents.
-
-        Returns:
-            Generated response.
-        """
-        try:
-            response = self.llm.chat.completions.create(
-                messages=self._build_messages(query, context),
-                model=self.model,
-                temperature=Config.LLM_TEMPERATURE,
-                max_tokens=Config.MAX_TOKENS
-            )
-            return response.choices[0].message.content or ""
-        except Exception as e:
-            return f"Error: {e}"
-
-    def ask(self, query: str, limit: int = 3) -> dict:
-        """
-        Complete RAG pipeline: Retrieve + Generate.
-
-        Args:
-            query: User query.
-            limit: Number of documents to retrieve.
-
-        Returns:
-            Dict with answer and documents used.
-        """
-        documents = self.retrieve(query, limit=limit)
-
-        answer = self.generate(query, documents)
-
-        return {"query": query, "answer": answer, "sources": documents}
-
     async def async_generate(self, query: str, context: list[str]) -> str:
         """
-        Async version of generate for concurrent LLM calls.
+        Generate a response using the LLM.
 
         Args:
             query: User query.
@@ -167,9 +132,13 @@ class RAGSystem:
         except Exception as e:
             return f"Error: {e}"
 
+    def generate(self, query: str, context: list[str]) -> str:
+        """Sync wrapper for async_generate."""
+        return asyncio.run(self.async_generate(query, context))
+
     async def async_ask(self, query: str, limit: int = 3) -> dict:
         """
-        Async version of ask for concurrent processing.
+        Complete RAG pipeline: Retrieve + Generate.
 
         Args:
             query: User query.
@@ -181,6 +150,10 @@ class RAGSystem:
         documents = self.retrieve(query, limit=limit)
         answer = await self.async_generate(query, documents)
         return {"query": query, "answer": answer, "sources": documents}
+
+    def ask(self, query: str, limit: int = 3) -> dict:
+        """Sync wrapper for async_ask."""
+        return asyncio.run(self.async_ask(query, limit))
 
     def close(self):
         """Close connections."""
