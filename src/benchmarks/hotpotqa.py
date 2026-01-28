@@ -14,13 +14,15 @@ from datasets import load_dataset
 from ..config import Config
 from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
-from .rag_bench import (
+from .metrics import (
     calculate_adherence,
     calculate_context_relevance,
     calculate_context_utilization,
     calculate_exact_match,
     calculate_f1,
     normalize_answer,
+)
+from .rag_bench import (
     print_results,
     save_results,
 )
