@@ -110,12 +110,16 @@ def prepare_hotpotqa_knowledge_base(vector_search, dataset, force_reload: bool =
 
 async def process_sample(rag, item, idx: int, retrieval_limit: int):
     """Process a single HotPotQA sample with RAG."""
+
+    # get question and right answer
     question = item.get("question", "")
     ground_truth = item.get("answer", "")
     if not question or not ground_truth:
         return None
 
     gold_docs = get_gold_paragraphs(item)
+
+    # rag answers
     result = await rag.async_ask(question, limit=retrieval_limit)
     predicted = result["answer"]
     retrieved_docs = result["sources"]
@@ -152,10 +156,10 @@ async def process_sample_llm_only(async_llm, model: str, item, idx: int):
 
     system_prompt = """You are a precise question-answering system.
 
-Instructions:
-- Be concise: use the minimum words necessary
-- If the answer is a name, date, number, or short phrase, respond with just that
-- Never explain your reasoning or add context"""
+        Instructions:
+        - Be concise: use the minimum words necessary
+        - If the answer is a name, date, number, or short phrase, respond with just that
+        - Never explain your reasoning or add context"""
 
     try:
         response = await async_llm.chat.completions.create(
@@ -295,19 +299,6 @@ async def run_hotpotqa_benchmark_async(
     return results
 
 
-def _print_breakdown(results: Dict) -> None:
-    """Print results breakdown by question type and difficulty level."""
-    logger.info("\nResults by question type:")
-    for q_type, scores in results["by_type"].items():
-        if scores:
-            logger.info(f"  {q_type}: F1={sum(scores)/len(scores):.3f} (n={len(scores)})")
-
-    logger.info("\nResults by difficulty level:")
-    for level, scores in results["by_level"].items():
-        if scores:
-            logger.info(f"  {level}: F1={sum(scores)/len(scores):.3f} (n={len(scores)})")
-
-
 # =============================================================================
 # Pipelines
 # =============================================================================
@@ -351,7 +342,6 @@ def run_hotpotqa_pipeline(
             retrieval_limit=retrieval_limit,
         ))
 
-        _print_breakdown(results)
         print_results(results)
         save_results(results)
 
@@ -374,7 +364,6 @@ def run_hotpotqa_llm_only_pipeline(max_samples: int = 50):
         eval_dataset, config, max_samples=max_samples
     ))
 
-    _print_breakdown(results)
     print_results(results)
     save_results(results)
 

@@ -515,13 +515,6 @@ def print_results(results: Dict) -> None:
     if "llm_judge_accuracy" in summary:
         logger.info(f"  LLM Judge Accuracy: {summary['llm_judge_accuracy']:.2%}")
 
-    logger.info("\nSample Predictions:")
-    for i, pred in enumerate(results["predictions"][:3]):
-        logger.info(f"\n  Example {i+1}:")
-        logger.info(f"    Query: {pred['query'][:100]}...")
-        logger.info(f"    Predicted: {pred['predicted'][:150]}...")
-        logger.info(f"    Ground Truth: {pred['ground_truth'][:150]}...")
-        logger.info(f"    F1: {pred['f1']:.3f}")
 
 
 def save_results(results: Dict, output_dir: str = None) -> None:
