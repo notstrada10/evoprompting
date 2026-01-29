@@ -29,7 +29,7 @@ from .rag_bench import (
 
 logger = logging.getLogger(__name__)
 
-# Table name for official HotPotQA data
+# Table name for HotPotQA data
 HOTPOTQA_TABLE = "embeddings_hotpotqa_official"
 
 
@@ -301,6 +301,11 @@ async def run_hotpotqa_benchmark_async(
     return results
 
 
+def run_hotpotqa_benchmark(dataset, config: HotPotQAConfig, **kwargs) -> Dict:
+    """Sync wrapper for run_hotpotqa_benchmark_async."""
+    return asyncio.run(run_hotpotqa_benchmark_async(dataset, config, **kwargs))
+
+
 # =============================================================================
 # Pipelines
 # =============================================================================
@@ -362,11 +367,9 @@ def run_hotpotqa_llm_only_pipeline(max_samples: int = 50):
     eval_dataset = load_hotpotqa_dataset(split="validation")
     logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
 
-    results = asyncio.run(run_hotpotqa_benchmark_async(
-        eval_dataset, config, max_samples=max_samples
-    ))
+    results = run_hotpotqa_benchmark(eval_dataset, config, max_samples=max_samples)
 
     print_results(results)
     save_results(results)
 
-    logger.info("\nBenchmark complete")
+    logger.info("\nBenchmark ccomplete")

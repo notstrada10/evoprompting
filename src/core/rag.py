@@ -84,7 +84,7 @@ class RAGSystem:
         results = self.vector_search.search(query, limit=limit)
         return [text for (id, text, similarity, metadata) in results]
 
-    def _build_messages(self, query: str, context: list[str]) -> list[dict]:
+    def build_messages(self, query: str, context: list[str]) -> list[dict]:
         """Build the messages for the LLM call."""
         context_text = "\n\n".join([f"[{i+1}] {doc}" for i, doc in enumerate(context)])
 
@@ -123,7 +123,7 @@ class RAGSystem:
         """
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=self._build_messages(query, context),
+                messages=self.build_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
@@ -136,6 +136,8 @@ class RAGSystem:
         """Sync wrapper for async_generate."""
         return asyncio.run(self.async_generate(query, context))
 
+
+    # MAIN Function
     async def async_ask(self, query: str, limit: int = 3) -> dict:
         """
         Complete RAG pipeline: Retrieve + Generate.
@@ -160,6 +162,7 @@ class RAGSystem:
         self.vector_search.close()
 
 
+# Alternative prompt - move smw else..-
 system_prompt2 = """
     You are a helpful assistant that answers questions based on the provided documents.
 

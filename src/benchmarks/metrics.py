@@ -142,6 +142,7 @@ def llm_judge_correctness(predicted: str, ground_truth: str, question: str, llm_
         content = response.choices[0].message.content.strip()
 
         is_correct, confidence, reasoning = False, 0.5, ""
+
         for line in content.split('\n'):
             line = line.strip()
             if line.startswith("CORRECT:"):

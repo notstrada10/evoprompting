@@ -60,8 +60,9 @@ class HyDERAGSystem:
                 ids.extend(doc_ids)
         return ids
 
-    def _build_hypothesis_messages(self, query: str) -> list[dict]:
+    def build_hypothesis_messages(self, query: str) -> list[dict]:
         """Build the messages for hypothesis generation."""
+
         system_prompt = """You generate hypothetical document passages that would answer a question.
         Write a detailed, factual-sounding passage as it would appear in a knowledge base or encyclopedia.
         Be specific with names, dates, and details. Write directly without preamble."""
@@ -75,7 +76,7 @@ class HyDERAGSystem:
             {"role": "user", "content": user_prompt},
         ]
 
-    def _build_answer_messages(self, query: str, context: list[str]) -> list[dict]:
+    def build_answer_messages(self, query: str, context: list[str]) -> list[dict]:
         """Build the messages for answer generation."""
         context_text = "\n\n".join([f"[{i+1}] {doc}" for i, doc in enumerate(context)])
 
@@ -113,7 +114,7 @@ class HyDERAGSystem:
         """
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=self._build_hypothesis_messages(query),
+                messages=self.build_hypothesis_messages(query),
                 model=self.model,
                 temperature=0.2,
                 max_tokens=350
@@ -155,7 +156,7 @@ class HyDERAGSystem:
         """
         try:
             response = await self.async_llm.chat.completions.create(
-                messages=self._build_answer_messages(query, context),
+                messages=self.build_answer_messages(query, context),
                 model=self.model,
                 temperature=Config.LLM_TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS
@@ -168,6 +169,7 @@ class HyDERAGSystem:
         """Sync wrapper for async_generate."""
         return asyncio.run(self.async_generate(query, context))
 
+    # MAIN function
     async def async_ask(self, query: str, limit: int = 3) -> dict:
         """
         Complete HyDE RAG pipeline:
@@ -198,6 +200,9 @@ class HyDERAGSystem:
         self.vector_search.close()
 
 
+
+
+# alternative prompt for RagBench - move smw else...
 system_prompt2 = """
     You are a helpful assistant that answers questions based on the provided documents.
 

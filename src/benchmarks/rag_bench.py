@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Configuration
+# Config
 # =============================================================================
 
 @dataclass
@@ -45,6 +45,18 @@ class DatasetConfig:
 # Dataset Loading
 # =============================================================================
 
+
+def load_benchmark_dataset(config: DatasetConfig, split: str = "test"):
+    """Load a benchmark dataset."""
+    logger.info(f"Loading {config.name} dataset ({split} split)...")
+    if config.subset:
+        dataset = load_dataset(config.source, config.subset, split=split)
+    else:
+        dataset = load_dataset(config.source, split=split)
+    logger.info(f"Loaded {len(dataset)} samples")
+    return dataset
+
+
 def extract_documents_from_item(item, config: DatasetConfig) -> list[str]:
     """Extract document texts from a dataset item."""
     docs_field = item.get(config.documents_field, [])
@@ -57,16 +69,6 @@ def extract_documents_from_item(item, config: DatasetConfig) -> list[str]:
 
     return []
 
-
-def load_benchmark_dataset(config: DatasetConfig, split: str = "test"):
-    """Load a benchmark dataset."""
-    logger.info(f"Loading {config.name} dataset ({split} split)...")
-    if config.subset:
-        dataset = load_dataset(config.source, config.subset, split=split)
-    else:
-        dataset = load_dataset(config.source, split=split)
-    logger.info(f"Loaded {len(dataset)} samples")
-    return dataset
 
 
 def prepare_knowledge_base(rag, dataset, config: DatasetConfig, force_reload: bool = False) -> None:
@@ -194,6 +196,7 @@ async def run_benchmark_async(
     retrieval_limit: int = None,
     use_llm_judge: bool = False,
 ) -> Dict:
+
     """
     Run benchmark evaluation. If rag is provided, runs RAG mode; otherwise LLM-only baseline.
 
@@ -285,6 +288,7 @@ async def run_benchmark_async(
                 results["llm_judge_scores"].append(entry["llm_judge"]["score"])
                 results["llm_correct_count"] += int(entry["llm_judge"]["is_correct"])
 
+        # progress logs
         if results["total"] > 0:
             avg_f1 = sum(results["f1_scores"]) / len(results["f1_scores"])
             progress_msg = f"Progress: {batch_end}/{samples_to_test} | F1: {avg_f1:.3f}"
@@ -344,8 +348,7 @@ def print_results(results: Dict) -> None:
         return
 
     logger.info("\n" + "="*60)
-    logger.info(f"{results['dataset'].upper()} BENCHMARK RESULTS")
-    logger.info("="*60)
+    logger.info(f"{results['dataset'].upper()} BENCHMARK RESULTS" + "\n" + "="*60)
 
     logger.info(f"\n  Total samples: {total}")
     logger.info(f"  Exact Match: {summary['exact_match_rate']:.2%}")
@@ -365,7 +368,7 @@ def print_results(results: Dict) -> None:
 
 
 
-def save_results(results: Dict, output_dir: str = None) -> None:
+def save_results(results: Dict, output_dir: str | None = None) -> None:
     """Save results to JSON file."""
     output_dir = output_dir or Config.RESULTS_DIR
     os.makedirs(output_dir, exist_ok=True)
@@ -423,6 +426,7 @@ def run_benchmark_pipeline(
     logger.info(f"Using {rag_type} RAG system")
     rag.setup()
 
+    # check to see if the kb is loaded and full
     try:
         if force_reload or rag.vector_search.count() == 0:
             logger.info("Loading all splits into knowledge base...")
@@ -445,6 +449,7 @@ def run_benchmark_pipeline(
         eval_dataset = load_benchmark_dataset(config, split=eval_split)
         logger.info(f"Evaluating on {eval_split} split ({len(eval_dataset)} samples)")
 
+        # run benchmark
         results = run_benchmark(
             eval_dataset, config,
             max_samples=max_samples,
@@ -474,6 +479,7 @@ def run_llm_only_pipeline(
     eval_dataset = load_benchmark_dataset(config, split=eval_split)
     logger.info(f"Evaluating on {eval_split} split ({len(eval_dataset)} samples)")
 
+    # run benchmark
     results = run_benchmark(eval_dataset, config, max_samples=max_samples)
     print_results(results)
     save_results(results)
