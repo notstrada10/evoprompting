@@ -19,7 +19,6 @@ class Config:
     # Embeddings
     EMBEDDING_MODEL: str = "google/embeddinggemma-300m"
     EMBEDDING_DIM: int = 768
-    USE_LOCAL_EMBEDDINGS: bool = True
     EMBEDDING_BATCH_SIZE: int = 1  # Set to 1 to disable batching
 
     # Chunking
