@@ -40,12 +40,12 @@ class EvolutionaryRAGSystem(RAGSystem):
         super().__init__(model=model, table_name=table_name)
 
         self.evolution_config = evolution_config or EvolutionConfig(
-            population_size=30,
-            k_initial=10,  # Final number of chunks to select (more for multi-hop)
-            max_generations=30,
-            mutation_rate=0.3,
+            population_size=50,
+            k_initial=15,  # Final number of chunks to select (more for multi-hop)
+            max_generations=100,
+            mutation_rate=0.2,
             alpha=1.0,  # coverage weight
-            beta=0.3,   # redundancy penalty weight (reduced)
+            beta=0.1,   # redundancy penalty weight (reduced)
         )
 
         # Number of candidates to retrieve from vector search
