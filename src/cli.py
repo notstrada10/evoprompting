@@ -54,6 +54,7 @@ def benchmark_command(args):
             use_llm_judge=args.use_llm_judge,
             eval_split=args.eval_split,
             use_hyde=args.use_hyde,
+            use_evolution=args.use_evolution,
         )
 
 
@@ -69,6 +70,7 @@ def hotpotqa_command(args):
             max_samples=args.max_samples,
             retrieval_limit=args.retrieval_limit,
             use_hyde=args.use_hyde,
+            use_evolution=args.use_evolution,
         )
 
 
@@ -103,6 +105,8 @@ def main():
                                  help='Eval split: validation (for optimization) or test (final eval)')
     benchmark_parser.add_argument('--use-hyde', action='store_true',
                                  help='Use HyDE RAG instead of standard RAG')
+    benchmark_parser.add_argument('--use-evolution', action='store_true',
+                                 help='Use evolutionary GA for chunk selection')
     benchmark_parser.add_argument('--llm-only', action='store_true',
                                  help='Run LLM-only baseline (no RAG)')
     benchmark_parser.add_argument('--subset', type=str, default='hotpotqa',
@@ -118,6 +122,8 @@ def main():
                                 help=f'Documents to retrieve (default: {Config.DEFAULT_RETRIEVAL_LIMIT})')
     hotpotqa_parser.add_argument('--use-hyde', action='store_true',
                                 help='Use HyDE RAG instead of standard RAG')
+    hotpotqa_parser.add_argument('--use-evolution', action='store_true',
+                                help='Use evolutionary GA for chunk selection')
     hotpotqa_parser.add_argument('--llm-only', action='store_true',
                                 help='Run LLM-only baseline (no RAG)')
 

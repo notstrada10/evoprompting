@@ -217,6 +217,36 @@ class VectorDatabase:
                 return 0
             return result[0]
 
+    def get_all_chunks(self) -> list[tuple[int, str]]:
+        """
+        Get all chunks from the database.
+
+        Returns:
+            List of (id, text) tuples.
+        """
+        conn = self._ensure_connection()
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT id, text FROM {self.table_name} ORDER BY id;")
+            return cur.fetchall()
+
+    def get_random_chunks(self, limit: int) -> list[tuple[int, str]]:
+        """
+        Get random chunks from the database.
+
+        Args:
+            limit: Number of random chunks to retrieve.
+
+        Returns:
+            List of (id, text) tuples.
+        """
+        conn = self._ensure_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id, text FROM {self.table_name} ORDER BY RANDOM() LIMIT %s;",
+                (limit,)
+            )
+            return cur.fetchall()
+
     def close(self) -> None:
         """Close the database connection."""
         if self.conn:

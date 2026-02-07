@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from datasets import concatenate_datasets, load_dataset
 
 from ..config import Config
+from ..core.evolutionary_rag import EvolutionaryRAGSystem
 from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
 from .metrics import (
@@ -410,6 +411,7 @@ def run_benchmark_pipeline(
     use_llm_judge: bool = False,
     eval_split: str = "test",
     use_hyde: bool = False,
+    use_evolution: bool = False,
 ):
     """Run RAG benchmark pipeline."""
     config = _make_ragbench_config(subset)
@@ -417,7 +419,10 @@ def run_benchmark_pipeline(
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("="*60)
 
-    if use_hyde:
+    if use_evolution:
+        rag = EvolutionaryRAGSystem()
+        rag_type = "evolutionary"
+    elif use_hyde:
         rag = HyDERAGSystem()
         rag_type = "HyDE"
     else:

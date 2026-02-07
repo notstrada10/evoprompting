@@ -10,8 +10,10 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from datasets import load_dataset
+from openai import AsyncOpenAI
 
 from ..config import Config
+from ..core.evolutionary_rag import EvolutionaryRAGSystem
 from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
 from .metrics import (
@@ -93,6 +95,7 @@ def prepare_hotpotqa_knowledge_base(vector_search, dataset, force_reload: bool =
         logger.info(f"Clearing existing {current_count} documents...")
         vector_search.delete_all()
 
+    # from dataset to text
     logger.info("Preparing knowledge base from official HotPotQA...")
     documents_added = set()
     for item in dataset:
@@ -102,6 +105,7 @@ def prepare_hotpotqa_knowledge_base(vector_search, dataset, force_reload: bool =
 
     logger.info(f"Embedding {len(documents_added)} unique paragraphs...")
     texts_with_metadata = [(doc, {"source": "hotpotqa-official"}) for doc in documents_added]
+    # pass the paragraphs to the embedder
     vector_search.add_texts(texts_with_metadata)
     logger.info(f"Added {len(documents_added)} documents to knowledge base")
 
@@ -207,9 +211,12 @@ async def run_hotpotqa_benchmark_async(
     rag=None,
     retrieval_limit: Optional[int] = None,
 ) -> Dict:
+
+
     """
     Run HotPotQA benchmark. If rag is provided, runs RAG mode; otherwise LLM-only baseline.
     """
+    # prepares the results format
     is_rag = rag is not None
     score_keys = ["f1", "precision", "recall"]
     if is_rag:
@@ -218,8 +225,8 @@ async def run_hotpotqa_benchmark_async(
 
     logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
 
+
     if not is_rag:
-        from openai import AsyncOpenAI
         async_llm = AsyncOpenAI(
             api_key=Config.DEEPSEEK_API_KEY,
             base_url=Config.DEEPSEEK_BASE_URL
@@ -315,6 +322,7 @@ def run_hotpotqa_pipeline(
     max_samples: int = 50,
     retrieval_limit: Optional[int] = None,
     use_hyde: bool = False,
+    use_evolution: bool = False,
 ):
     """Run official HotPotQA benchmark pipeline."""
     config = HotPotQAConfig()
@@ -322,7 +330,10 @@ def run_hotpotqa_pipeline(
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("=" * 60)
 
-    if use_hyde:
+    if use_evolution:
+        rag = EvolutionaryRAGSystem(table_name=config.table_name)
+        rag_type = "evolutionary"
+    elif use_hyde:
         rag = HyDERAGSystem(table_name=config.table_name)
         rag_type = "HyDE"
     else:
