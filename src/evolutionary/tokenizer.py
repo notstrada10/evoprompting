@@ -1,11 +1,10 @@
 from typing import List, Optional
 
-import numpy as np
 from transformers import AutoTokenizer
 
 
 class Tokenizer:
-    """Wrapper per tokenizer HuggingFace con caching."""
+    """Wrapper for HuggingFace tokenizer with caching and batch support."""
 
     _instance: Optional["Tokenizer"] = None
     _tokenizer = None
@@ -16,7 +15,7 @@ class Tokenizer:
 
     @classmethod
     def get_instance(cls, model_name: str = "deepseek-ai/DeepSeek-V3") -> "Tokenizer":
-        """Singleton pattern per evitare ricaricamenti multipli."""
+        """Singleton pattern to avoid multiple reloads."""
         if cls._instance is None or cls._instance.model_name != model_name:
             cls._instance = cls(model_name)
         return cls._instance
@@ -26,14 +25,25 @@ class Tokenizer:
         return self._tokenizer.vocab_size
 
     def encode(self, text: str) -> List[int]:
-        """Tokenizza testo in lista di token IDs."""
+        """Tokenize text to list of token IDs."""
         return self._tokenizer.encode(text, add_special_tokens=False)
 
+    def encode_batch(self, texts: List[str]) -> List[List[int]]:
+        """Batch tokenize multiple texts at once (faster)."""
+        encoded = self._tokenizer(
+            texts,
+            add_special_tokens=False,
+            padding=False,
+            truncation=False,
+            return_attention_mask=False,
+        )
+        return encoded["input_ids"]
+
     def decode(self, token_ids: List[int]) -> str:
-        """Decodifica token IDs in testo."""
+        """Decode token IDs to text."""
         return self._tokenizer.decode(token_ids)
 
     def to_tokens(self, text: str) -> List[str]:
-        """Converte testo in lista di token come stringhe."""
+        """Convert text to list of token strings."""
         token_ids = self.encode(text)
         return self._tokenizer.convert_ids_to_tokens(token_ids)

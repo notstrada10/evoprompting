@@ -109,18 +109,29 @@ class Distribution:
 class ChunkDistributions:
     """Manages pre-computed distributions for all chunks."""
 
-    def __init__(self, chunks: List[str], tokenizer: Tokenizer):
+    def __init__(self, chunks: List[str], tokenizer: Tokenizer, batch_size: int = 1000):
         self.chunks = chunks
         self.tokenizer = tokenizer
         self.distributions: List[Distribution] = []
-        self._build_distributions()
+        self._build_distributions_batched(batch_size)
 
-    def _build_distributions(self):
-        """Convert all chunks to sparse distributions."""
-        self.distributions = [
-            Distribution.from_text(chunk, self.tokenizer)
-            for chunk in self.chunks
-        ]
+    def _build_distributions_batched(self, batch_size: int):
+        """Convert all chunks to sparse distributions using batch tokenization."""
+        self.distributions = []
+
+        for i in range(0, len(self.chunks), batch_size):
+            batch = self.chunks[i:i + batch_size]
+            token_ids_batch = self.tokenizer.encode_batch(batch)
+
+            for token_ids in token_ids_batch:
+                if not token_ids:
+                    self.distributions.append(Distribution({}))
+                    continue
+
+                counts = Counter(token_ids)
+                total = len(token_ids)
+                probs = {tid: count / total for tid, count in counts.items()}
+                self.distributions.append(Distribution(probs))
 
     def get_combined(self, indices: List[int]) -> Distribution:
         """Combine distributions of selected chunk indices."""

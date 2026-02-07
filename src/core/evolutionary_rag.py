@@ -1,30 +1,34 @@
 """
-Evolutionary RAG System.
+Evolutionary RAG System - Two-Stage Pipeline.
 
-Offline genetic algorithm for chunk selection using sparse probability distributions.
-Fitness = α * coverage (negative KL) + β * entropy (diversity)
+Stage 1: Vector search to get top-N candidates (e.g., 100)
+Stage 2: Genetic Algorithm to select optimal k chunks from candidates
+
+Fitness = Coverage(query, chunks) - Redundancy(chunks)
 """
 import logging
 import random
-from typing import List, Optional
+from collections import Counter
+from typing import Dict, List, Optional, Tuple
 
-from ..evolutionary.distribution import ChunkDistributions, Distribution
 from ..evolutionary.evolution import EvolutionConfig
 from ..evolutionary.tokenizer import Tokenizer
 from .rag import RAGSystem
 
 logger = logging.getLogger(__name__)
 
+# Sparse probability distribution type
+SparseProb = Dict[int, float]
+
 
 class EvolutionaryRAGSystem(RAGSystem):
     """
-    Evolutionary RAG using sparse token distributions.
+    Two-Stage Evolutionary RAG:
 
-    Fitness function:
-    - Coverage: -KL(query || mixture) - how well chunks cover the query
-    - Diversity: H(mixture) - entropy of combined chunks
+    1. Vector search: 72k -> top 100 candidates (fast, ~50ms)
+    2. GA optimization: 100 -> best 5 chunks (fast, ~100ms)
 
-    Fitness = α * coverage + β * diversity
+    Fitness = coverage - redundancy (no LLM calls)
     """
 
     def __init__(
@@ -36,17 +40,18 @@ class EvolutionaryRAGSystem(RAGSystem):
         super().__init__(model=model, table_name=table_name)
 
         self.evolution_config = evolution_config or EvolutionConfig(
-            population_size=100,
-            k_initial=20,
-            max_generations=100,
-            mutation_rate=0.7,  # High mutation for exploration
-            alpha=0.7,  # coverage weight
-            beta=0.3,   # diversity/entropy weight
+            population_size=30,
+            k_initial=10,  # Final number of chunks to select (more for multi-hop)
+            max_generations=30,
+            mutation_rate=0.3,
+            alpha=1.0,  # coverage weight
+            beta=0.3,   # redundancy penalty weight (reduced)
         )
 
+        # Number of candidates to retrieve from vector search
+        self.n_candidates = 100
+
         self._tokenizer: Optional[Tokenizer] = None
-        self._chunk_distributions: Optional[ChunkDistributions] = None
-        self._query_distribution: Optional[Distribution] = None
 
     @property
     def tokenizer(self) -> Tokenizer:
@@ -54,99 +59,122 @@ class EvolutionaryRAGSystem(RAGSystem):
             self._tokenizer = Tokenizer.get_instance(self.evolution_config.model_name)
         return self._tokenizer
 
-    def _compute_fitness(self, genome: List[int]) -> float:
-        """
-        Compute fitness: α * coverage + β * entropy.
+    def _text_to_sparse_dist(self, text: str) -> SparseProb:
+        """Convert text to sparse probability distribution."""
+        if not text:
+            return {}
+        token_ids = self.tokenizer.encode(text)
+        if not token_ids:
+            return {}
+        counts = Counter(token_ids)
+        total = len(token_ids)
+        return {tid: count / total for tid, count in counts.items()}
 
-        - Coverage: -KL(query || mixture) (negative because we minimize divergence)
-        - Diversity: H(mixture) - entropy of the combined distribution
+    def _compute_fitness(
+        self,
+        genome: List[int],
+        query_dist: SparseProb,
+        candidate_dists: List[SparseProb]
+    ) -> float:
+        """
+        Fitness = Coverage - Redundancy
+
+        Coverage: How well do selected chunks cover query tokens?
+        Redundancy: How much do chunks repeat each other?
         """
         if not genome:
             return float('-inf')
 
-        # Get mixture distribution of selected chunks
-        mixture = self._chunk_distributions.get_combined(genome)
-
-        if not mixture.probs:
-            return float('-inf')
-
-        # Coverage: negative KL divergence (we want to minimize distance to query)
-        kl = self._query_distribution.kl_divergence(mixture)
-        coverage = -kl
-
-        # Diversity: entropy of the mixture (high entropy = diverse vocabulary)
-        entropy = mixture.entropy()
-
         alpha = self.evolution_config.alpha
         beta = self.evolution_config.beta
 
-        return alpha * coverage + beta * entropy
+        # Coverage: overlap between chunks and query
+        coverage_score = 0.0
 
-    def evolve_chunks(self, chunks: List[str], query: str, k: int) -> List[str]:
+        # Track seen tokens for redundancy calculation
+        seen_tokens: Dict[int, float] = {}
+        redundancy_penalty = 0.0
+
+        for idx in genome:
+            chunk_dist = candidate_dists[idx]
+
+            for token, prob in chunk_dist.items():
+                # Coverage: reward overlap with query
+                if token in query_dist:
+                    coverage_score += prob * query_dist[token]
+
+                # Redundancy: penalize repeated tokens across chunks
+                if token in seen_tokens:
+                    redundancy_penalty += prob * seen_tokens[token]
+                else:
+                    seen_tokens[token] = prob
+
+        return alpha * coverage_score - beta * redundancy_penalty
+
+    def _run_ga(
+        self,
+        query_dist: SparseProb,
+        candidate_dists: List[SparseProb],
+        k: int,
+    ) -> List[int]:
         """
-        Evolve population to find best k chunks.
+        Run genetic algorithm on candidate pool.
 
         Args:
-            chunks: All candidate chunks.
-            query: User query.
-            k: Number of chunks to select.
+            query_dist: Query token distribution
+            candidate_dists: List of candidate chunk distributions
+            k: Number of chunks to select
 
         Returns:
-            Selected chunks after evolution.
+            List of indices (0 to len(candidates)-1) of best chunks
         """
-        n_chunks = len(chunks)
-        if n_chunks <= k:
-            return chunks
-
-        # Build sparse distributions
-        logger.info(f"Building sparse distributions for {n_chunks} chunks...")
-        self._chunk_distributions = ChunkDistributions(chunks, self.tokenizer)
-        self._query_distribution = Distribution.from_text(query, self.tokenizer)
+        M = len(candidate_dists)
+        if M <= k:
+            return list(range(M))
 
         pop_size = self.evolution_config.population_size
         generations = self.evolution_config.max_generations
         mutation_rate = self.evolution_config.mutation_rate
 
-        # Initialize population: random k indices per genome
-        population = [random.sample(range(n_chunks), k) for _ in range(pop_size)]
+        # Initialize population: random k indices
+        population = [random.sample(range(M), k) for _ in range(pop_size)]
 
         best_genome = None
         best_fitness = float('-inf')
 
         for gen in range(generations):
-            # Evaluate all genomes
-            scored_pop = []
+            # Evaluate
+            scored = []
             for genome in population:
-                score = self._compute_fitness(genome)
-                scored_pop.append((score, genome))
+                score = self._compute_fitness(genome, query_dist, candidate_dists)
+                scored.append((score, genome))
 
                 if score > best_fitness:
                     best_fitness = score
-                    best_genome = genome
+                    best_genome = genome[:]
 
-            # Sort by fitness (descending)
-            scored_pop.sort(key=lambda x: x[0], reverse=True)
+            # Sort by fitness
+            scored.sort(key=lambda x: x[0], reverse=True)
 
             # Selection: top 50% survive
-            survivors = [x[1] for x in scored_pop[:pop_size // 2]]
+            survivors = [s[1] for s in scored[:pop_size // 2]]
 
             # Create new population with elitism
-            new_pop = [genome[:] for genome in survivors]  # Keep survivors
+            new_pop = [g[:] for g in survivors]
 
-            # Fill rest with mutated offspring
+            # Fill with mutated offspring
             while len(new_pop) < pop_size:
                 parent = random.choice(survivors)
                 child = parent[:]
 
-                # Mutation: swap one chunk with a random new one
+                # Mutation: swap one chunk
                 if random.random() < mutation_rate:
                     idx_to_replace = random.randint(0, k - 1)
-                    new_candidate = random.randint(0, n_chunks - 1)
+                    new_candidate = random.randint(0, M - 1)
 
-                    # Ensure uniqueness
                     attempts = 0
                     while new_candidate in child and attempts < 10:
-                        new_candidate = random.randint(0, n_chunks - 1)
+                        new_candidate = random.randint(0, M - 1)
                         attempts += 1
 
                     if new_candidate not in child:
@@ -156,38 +184,44 @@ class EvolutionaryRAGSystem(RAGSystem):
 
             population = new_pop
 
-        # Return best chunks
-        if best_genome is None:
-            best_genome = population[0]
-
-        selected_chunks = [chunks[i] for i in best_genome]
-
-        logger.info(
-            f"Evolution: {n_chunks} chunks, {generations} gens -> "
-            f"{len(selected_chunks)} selected (fitness={best_fitness:.4f})"
-        )
-
-        return selected_chunks
+        return best_genome if best_genome else population[0]
 
     def retrieve(self, query: str, limit: int = 5) -> List[str]:
         """
-        Evolutionary retrieval over entire KB.
+        Two-stage retrieval:
+        1. Vector search: get top-N candidates
+        2. GA: select optimal k from candidates
 
         Args:
-            query: User query.
-            limit: Not used (k_initial from config is used).
+            query: User query
+            limit: Number of chunks to return
 
         Returns:
-            Selected chunks.
+            Selected chunks
         """
-        db = self.vector_search.db
-        all_chunks = db.get_all_chunks()
+        # Stage 1: Vector search for candidates
+        candidates = self.vector_search.search(query, limit=self.n_candidates)
 
-        if not all_chunks:
+        if not candidates:
             return []
 
-        chunks = [text for (id, text) in all_chunks]
+        if len(candidates) <= limit:
+            return [c[1] for c in candidates]  # text is at index 1
 
-        selected = self.evolve_chunks(chunks, query, k=self.evolution_config.k_initial)
+        # Build sparse distributions
+        # candidates format: (id, text, score, metadata)
+        query_dist = self._text_to_sparse_dist(query)
+        candidate_texts = [c[1] for c in candidates]  # text is at index 1
+        candidate_dists = [self._text_to_sparse_dist(text) for text in candidate_texts]
+
+        # Stage 2: GA optimization
+        k = self.evolution_config.k_initial
+        best_indices = self._run_ga(query_dist, candidate_dists, k)
+
+        selected = [candidate_texts[i] for i in best_indices]
+
+        logger.info(
+            f"Two-stage: {self.n_candidates} candidates -> {len(selected)} selected via GA"
+        )
 
         return selected
