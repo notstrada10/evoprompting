@@ -210,9 +210,8 @@ async def run_hotpotqa_benchmark_async(
     max_samples: Optional[int] = None,
     rag=None,
     retrieval_limit: Optional[int] = None,
+    batch_size: Optional[int] = None,
 ) -> Dict:
-
-
     """
     Run HotPotQA benchmark. If rag is provided, runs RAG mode; otherwise LLM-only baseline.
     """
@@ -223,7 +222,8 @@ async def run_hotpotqa_benchmark_async(
         score_keys += ["relevance", "utilization", "adherence"]
         retrieval_limit = retrieval_limit or Config.DEFAULT_RETRIEVAL_LIMIT
 
-    logger.info(f"Running {config.name} benchmark with {Config.BATCH_SIZE} concurrent requests...")
+    batch_size = batch_size or Config.BATCH_SIZE
+    logger.info(f"Running {config.name} benchmark with {batch_size} concurrent requests...")
 
 
     if not is_rag:
@@ -262,8 +262,8 @@ async def run_hotpotqa_benchmark_async(
     samples_to_test = min(len(dataset), max_samples) if max_samples else len(dataset)
     samples = list(dataset)[:samples_to_test]
 
-    for batch_start in range(0, len(samples), Config.BATCH_SIZE):
-        batch_end = min(batch_start + Config.BATCH_SIZE, len(samples))
+    for batch_start in range(0, len(samples), batch_size):
+        batch_end = min(batch_start + batch_size, len(samples))
         batch = samples[batch_start:batch_end]
 
         if is_rag:
@@ -353,11 +353,15 @@ def run_hotpotqa_pipeline(
         eval_dataset = load_hotpotqa_dataset(split="validation")
         logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
 
+        # Evolution is CPU-heavy (GA + tokenization), reduce concurrency
+        evo_batch_size = 10 if use_evolution else None
+
         results = asyncio.run(run_hotpotqa_benchmark_async(
             eval_dataset, config,
             max_samples=max_samples,
             rag=rag,
             retrieval_limit=retrieval_limit,
+            batch_size=evo_batch_size,
         ))
 
         print_results(results)
