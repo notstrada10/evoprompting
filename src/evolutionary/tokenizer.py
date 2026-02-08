@@ -4,33 +4,29 @@ from transformers import AutoTokenizer
 
 
 class Tokenizer:
-    """Wrapper for HuggingFace tokenizer with caching and batch support."""
+    """Wrapper for HuggingFace tokenizer with singleton and batch support."""
 
-    _instance: Optional["Tokenizer"] = None
-    _tokenizer = None
+    instance: Optional["Tokenizer"] = None
 
     def __init__(self, model_name: str = "deepseek-ai/DeepSeek-V3"):
         self.model_name = model_name
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.hf_tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     @classmethod
     def get_instance(cls, model_name: str = "deepseek-ai/DeepSeek-V3") -> "Tokenizer":
-        """Singleton pattern to avoid multiple reloads."""
-        if cls._instance is None or cls._instance.model_name != model_name:
-            cls._instance = cls(model_name)
-        return cls._instance
+        if cls.instance is None or cls.instance.model_name != model_name:
+            cls.instance = cls(model_name)
+        return cls.instance
 
     @property
     def vocab_size(self) -> int:
-        return self._tokenizer.vocab_size
+        return self.hf_tokenizer.vocab_size
 
     def encode(self, text: str) -> List[int]:
-        """Tokenize text to list of token IDs."""
-        return self._tokenizer.encode(text, add_special_tokens=False)
+        return self.hf_tokenizer.encode(text, add_special_tokens=False)
 
     def encode_batch(self, texts: List[str]) -> List[List[int]]:
-        """Batch tokenize multiple texts at once (faster)."""
-        encoded = self._tokenizer(
+        encoded = self.hf_tokenizer(
             texts,
             add_special_tokens=False,
             padding=False,
@@ -40,10 +36,4 @@ class Tokenizer:
         return encoded["input_ids"]
 
     def decode(self, token_ids: List[int]) -> str:
-        """Decode token IDs to text."""
-        return self._tokenizer.decode(token_ids)
-
-    def to_tokens(self, text: str) -> List[str]:
-        """Convert text to list of token strings."""
-        token_ids = self.encode(text)
-        return self._tokenizer.convert_ids_to_tokens(token_ids)
+        return self.hf_tokenizer.decode(token_ids)

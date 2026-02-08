@@ -1,9 +1,4 @@
-"""
-Evolutionary Prompting System
-
-Sistema di ottimizzazione chunk tramite Genetic Algorithm.
-Massimizza l'Information Gain rispetto a una query.
-"""
+"""Evolutionary Prompting — chunk optimization via Genetic Algorithm."""
 
 from .distribution import ChunkDistributions, Distribution
 from .evolution import Evolution, EvolutionConfig, EvolutionResult, evolve_chunks
