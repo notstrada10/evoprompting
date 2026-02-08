@@ -1,22 +1,21 @@
 """
-Evolutionary RAG System - Two-Stage Pipeline with Multi-Hop Reasoning.
+Evolutionary RAG System - Vector Search + Evolutionary Selection.
 
-Stage 1: Vector search to get top-N candidates (e.g., 100)
-Stage 2: Genetic Algorithm to select optimal k chunks from candidates
+Stage 1: Vector search to get top-N semantically relevant candidates
+Stage 2: GA to select the optimal k-chunk combination from candidates
 
-Fitness = alpha * Coverage + gamma * EntityChaining - beta * Redundancy
+Fitness combines:
+  - KL divergence: how well the genome's token distribution matches the query
+  - Diversity: penalize redundant chunks (pairwise cosine similarity)
 
-Entity chaining rewards chunk combinations where chunks reference each other's
-entities (titles), forming reasoning chains needed for multi-hop questions.
-
-Optimized with numpy vectorization and batch tokenization.
+Crossover = sum parent distributions, select k chunks closest to combined dist.
+Replace worse parent if child is fitter.
 """
 import logging
 import random
-import re
 import time
 from collections import Counter
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -30,12 +29,11 @@ logger = logging.getLogger(__name__)
 
 class EvolutionaryRAGSystem(RAGSystem):
     """
-    Two-Stage Evolutionary RAG with Multi-Hop Entity Chaining:
+    Two-Stage Evolutionary RAG:
 
-    1. Vector search: 72k -> top 100 candidates (fast, ~50ms)
-    2. GA optimization: 100 -> best k chunks (vectorized, ~20-50ms)
-
-    Fitness = alpha * coverage + gamma * entity_chaining - beta * redundancy
+    1. Vector search: get top-N semantically relevant candidates
+    2. GA: select optimal k-chunk combination maximizing
+       coverage (KL) + diversity - redundancy
     """
 
     def __init__(
@@ -47,8 +45,8 @@ class EvolutionaryRAGSystem(RAGSystem):
         super().__init__(model=model, table_name=table_name)
 
         self.evolution_config = evolution_config or EvolutionConfig(
-            population_size=100,
-            k_initial=20,
+            population_size=1000,
+            k_initial=50,
             max_generations=100,
             mutation_rate=0.2,
             alpha=1.0,
@@ -57,7 +55,7 @@ class EvolutionaryRAGSystem(RAGSystem):
 
         self.n_candidates = 100
         self.early_stop_patience = 15
-        self.gamma = 0.5  # Weight for entity chaining
+        self.diversity_weight = 0.3
         self._tokenizer: Optional[Tokenizer] = None
 
     @property
@@ -66,102 +64,25 @@ class EvolutionaryRAGSystem(RAGSystem):
             self._tokenizer = Tokenizer.get_instance(self.evolution_config.model_name)
         return self._tokenizer
 
-    def _extract_title(self, text: str) -> str:
-        """Extract the entity title from a chunk (text before first colon)."""
-        colon_idx = text.find(":")
-        if colon_idx > 0 and colon_idx < 100:
-            return text[:colon_idx].strip()
-        return ""
-
-    def _build_entity_adjacency(self, candidate_texts: List[str]) -> np.ndarray:
-        """
-        Build entity adjacency matrix for multi-hop chaining.
-
-        adj[i][j] = 1 if chunk i's title entity appears in chunk j's text
-        (or vice versa). This means chunks i and j are connected through
-        a shared entity and can form a reasoning chain.
-
-        Args:
-            candidate_texts: List of chunk texts
-
-        Returns:
-            adj: np.ndarray of shape (n_candidates, n_candidates), symmetric
-        """
-        n = len(candidate_texts)
-        titles = [self._extract_title(t) for t in candidate_texts]
-        texts_lower = [t.lower() for t in candidate_texts]
-
-        adj = np.zeros((n, n), dtype=np.float32)
-
-        for i in range(n):
-            if not titles[i] or len(titles[i]) < 2:
-                continue
-            title_lower = titles[i].lower()
-            for j in range(n):
-                if i == j:
-                    continue
-                if title_lower in texts_lower[j]:
-                    adj[i][j] = 1.0
-                    adj[j][i] = 1.0  # symmetric
-
-        return adj
-
-    def _compute_chaining_batch(
-        self, population: np.ndarray, entity_adj: np.ndarray
-    ) -> np.ndarray:
-        """
-        Compute entity chaining score for all genomes.
-
-        Chaining = fraction of selected chunk pairs that share an entity link.
-        A score of 1.0 means every pair of selected chunks is connected.
-
-        Args:
-            population: np.ndarray of shape (pop_size, k) — chunk indices
-            entity_adj: np.ndarray of shape (n_candidates, n_candidates)
-
-        Returns:
-            chaining scores: np.ndarray of shape (pop_size,) in [0, 1]
-        """
-        pop_size, k = population.shape
-        if k < 2:
-            return np.zeros(pop_size, dtype=np.float32)
-
-        max_edges = k * (k - 1) / 2
-        scores = np.empty(pop_size, dtype=np.float32)
-
-        for i in range(pop_size):
-            selected = population[i]
-            # Extract subgraph adjacency for selected chunks
-            sub_adj = entity_adj[np.ix_(selected, selected)]
-            # Count edges (upper triangle to avoid double counting)
-            n_edges = np.triu(sub_adj, k=1).sum()
-            scores[i] = n_edges / max_edges
-
-        return scores
-
     def _build_matrices(
         self, query_text: str, candidate_texts: List[str]
-    ):
+    ) -> Tuple[np.ndarray, csr_matrix]:
         """
-        Batch-tokenize and build numpy structures for fast fitness evaluation.
+        Batch-tokenize and build numpy structures for fitness evaluation.
 
         Returns:
-            coverage_per_chunk: np.ndarray of shape (n_candidates,) — precomputed coverage score per chunk
-            chunk_matrix: csr_matrix of shape (n_candidates, n_tokens) — sparse prob distributions
+            query_vec: dense query probability distribution (n_tokens,)
+            chunk_matrix: sparse chunk probability distributions (n_candidates, n_tokens)
         """
-        # Batch tokenize: 1 call instead of 100+
         all_texts = [query_text] + candidate_texts
         all_token_ids = self.tokenizer.encode_batch(all_texts)
 
         query_ids = all_token_ids[0]
         candidate_ids_list = all_token_ids[1:]
 
-        # Build query distribution
         query_counts = Counter(query_ids)
         query_total = len(query_ids)
-        query_dist = {tid: c / query_total for tid, c in query_counts.items()}
 
-        # Collect all unique token IDs across query + candidates to build compact column mapping
         all_token_set = set(query_ids)
         candidate_counters = []
         candidate_totals = []
@@ -170,17 +91,14 @@ class EvolutionaryRAGSystem(RAGSystem):
             candidate_counters.append(Counter(ids))
             candidate_totals.append(len(ids))
 
-        # Token ID -> compact column index
         token_to_col = {tid: col for col, tid in enumerate(sorted(all_token_set))}
         n_tokens = len(token_to_col)
         n_candidates = len(candidate_texts)
 
-        # Build query vector (dense, small)
         query_vec = np.zeros(n_tokens, dtype=np.float32)
-        for tid, prob in query_dist.items():
-            query_vec[token_to_col[tid]] = prob
+        for tid, count in query_counts.items():
+            query_vec[token_to_col[tid]] = count / query_total
 
-        # Build candidate sparse matrix
         rows, cols, data = [], [], []
         for i, (counts, total) in enumerate(zip(candidate_counters, candidate_totals)):
             if total == 0:
@@ -195,169 +113,190 @@ class EvolutionaryRAGSystem(RAGSystem):
             shape=(n_candidates, n_tokens),
         )
 
-        # Pre-compute per-chunk coverage: chunk_matrix @ query_vec
-        # Coverage is additive per chunk, so we can precompute it once
-        coverage_per_chunk = chunk_matrix.dot(query_vec)  # shape (n_candidates,)
+        return query_vec, chunk_matrix
 
-        return coverage_per_chunk, chunk_matrix
+    def _build_similarity_matrix(self, chunk_matrix: csr_matrix) -> np.ndarray:
+        """
+        Precompute pairwise cosine similarity between all candidate chunks.
+        Used to penalize redundant selections.
+        """
+        # Normalize rows to unit vectors
+        norms = np.sqrt(np.asarray(chunk_matrix.power(2).sum(axis=1)).flatten())
+        norms[norms == 0] = 1.0
+        # Diag matrix of inverse norms
+        inv_norms = csr_matrix(np.diag(1.0 / norms))
+        normalized = inv_norms @ chunk_matrix
+        # Cosine similarity = dot product of normalized vectors
+        sim = (normalized @ normalized.T).toarray()
+        # Zero out diagonal (self-similarity)
+        np.fill_diagonal(sim, 0.0)
+        return sim
 
-    def _compute_redundancy_batch(
-        self, population: np.ndarray, chunk_matrix: csr_matrix
+    def _kl_divergence(
+        self, query_vec: np.ndarray, genome_dist: np.ndarray, epsilon: float = 1e-10
+    ) -> float:
+        """
+        Compute KL(query || genome_dist).
+        Only over tokens where query has non-zero probability.
+        """
+        mask = query_vec > 0
+        q = query_vec[mask]
+        p = genome_dist[mask] + epsilon
+        return float(np.sum(q * np.log(q / p)))
+
+    def _genome_distribution(
+        self, genome: np.ndarray, chunk_matrix: csr_matrix
+    ) -> np.ndarray:
+        """Sum and normalize token distributions of selected chunks."""
+        combined = np.asarray(chunk_matrix[genome].sum(axis=0)).flatten()
+        total = combined.sum()
+        if total > 0:
+            combined /= total
+        return combined
+
+    def _fitness(
+        self,
+        genome: np.ndarray,
+        query_vec: np.ndarray,
+        chunk_matrix: csr_matrix,
+        sim_matrix: np.ndarray,
+    ) -> float:
+        """
+        Fitness = -KL(query || genome_dist) - diversity_weight * avg_pairwise_similarity
+
+        First term: how well the chunks cover the query (higher = better).
+        Second term: penalize selecting chunks that are too similar to each other.
+        """
+        dist = self._genome_distribution(genome, chunk_matrix)
+        kl = self._kl_divergence(query_vec, dist)
+
+        # Average pairwise similarity among selected chunks
+        k = len(genome)
+        if k < 2:
+            redundancy = 0.0
+        else:
+            sub_sim = sim_matrix[np.ix_(genome, genome)]
+            redundancy = np.triu(sub_sim, k=1).sum() / (k * (k - 1) / 2)
+
+        return -kl - self.diversity_weight * redundancy
+
+    def _fitness_batch(
+        self,
+        population: np.ndarray,
+        query_vec: np.ndarray,
+        chunk_matrix: csr_matrix,
+        sim_matrix: np.ndarray,
+    ) -> np.ndarray:
+        """Compute fitness for all genomes."""
+        return np.array([
+            self._fitness(genome, query_vec, chunk_matrix, sim_matrix)
+            for genome in population
+        ], dtype=np.float32)
+
+    def _crossover(
+        self,
+        p1: np.ndarray,
+        p2: np.ndarray,
+        chunk_matrix: csr_matrix,
+        k: int,
+        M: int,
+        mutation_rate: float,
     ) -> np.ndarray:
         """
-        Compute redundancy for all genomes in the population.
-
-        Args:
-            population: np.ndarray of shape (pop_size, k)
-            chunk_matrix: csr_matrix of shape (n_candidates, n_tokens)
-
-        Returns:
-            redundancy scores: np.ndarray of shape (pop_size,)
+        Distribution-based crossover:
+        1. Sum the two parents' token distributions
+        2. Score all candidates by dot product with combined dist
+        3. Select top-k as the child
+        4. Apply mutation
         """
-        pop_size, k = population.shape
-        redundancies = np.empty(pop_size, dtype=np.float32)
+        parent_dist = (
+            np.asarray(chunk_matrix[p1].sum(axis=0)).flatten()
+            + np.asarray(chunk_matrix[p2].sum(axis=0)).flatten()
+        )
+        total = parent_dist.sum()
+        if total > 0:
+            parent_dist /= total
 
-        for i in range(pop_size):
-            selected = chunk_matrix[population[i]].toarray()  # (k, n_tokens)
-            nonzero_mask = selected > 0
-            first_idx = np.argmax(nonzero_mask, axis=0)
-            first_prob = selected[first_idx, np.arange(selected.shape[1])]
-            subsequent = selected.copy()
-            subsequent[first_idx, np.arange(selected.shape[1])] = 0
-            redundancies[i] = (subsequent * first_prob[np.newaxis, :]).sum()
+        scores = chunk_matrix.dot(parent_dist)
+        top_k = np.argsort(scores)[::-1][:k].copy()
 
-        return redundancies
+        if random.random() < mutation_rate:
+            pos = random.randint(0, k - 1)
+            selected_set = set(top_k.tolist())
+            non_selected = [i for i in range(M) if i not in selected_set]
+            if non_selected:
+                top_k[pos] = random.choice(non_selected)
+
+        return top_k
 
     def _run_ga(
         self,
-        coverage_per_chunk: np.ndarray,
+        query_vec: np.ndarray,
         chunk_matrix: csr_matrix,
-        entity_adj: np.ndarray,
+        sim_matrix: np.ndarray,
         k: int,
     ) -> List[int]:
         """
-        Run genetic algorithm with multi-hop entity chaining fitness.
-
-        Fitness = alpha * coverage + gamma * entity_chaining - beta * redundancy
-
-        Args:
-            coverage_per_chunk: Precomputed coverage score per chunk (n_candidates,)
-            chunk_matrix: Sparse matrix of chunk token distributions
-            entity_adj: Entity adjacency matrix (n_candidates, n_candidates)
-            k: Number of chunks to select
-
-        Returns:
-            List of best chunk indices
+        GA with KL divergence + diversity fitness and distribution crossover.
+        Replace worse parent if child is fitter.
         """
-        M = len(coverage_per_chunk)
+        M = chunk_matrix.shape[0]
         if M <= k:
             return list(range(M))
 
         pop_size = self.evolution_config.population_size
         generations = self.evolution_config.max_generations
         mutation_rate = self.evolution_config.mutation_rate
-        alpha = self.evolution_config.alpha
-        beta = self.evolution_config.beta
-        gamma = self.gamma
 
-        # Initialize population as numpy array: (pop_size, k)
         population = np.array([
             random.sample(range(M), k) for _ in range(pop_size)
         ], dtype=np.int32)
 
-        best_genome = None
-        best_fitness = float('-inf')
+        fitness = self._fitness_batch(population, query_vec, chunk_matrix, sim_matrix)
+
+        best_idx = np.argmax(fitness)
+        best_fitness = fitness[best_idx]
+        best_genome = population[best_idx].tolist()
         stale_generations = 0
 
         for gen in range(generations):
-            # Coverage
-            coverage_scores = coverage_per_chunk[population].sum(axis=1)
+            t1 = random.sample(range(pop_size), min(3, pop_size))
+            t2 = random.sample(range(pop_size), min(3, pop_size))
+            p1_idx = max(t1, key=lambda i: fitness[i])
+            p2_idx = max(t2, key=lambda i: fitness[i])
 
-            # Redundancy
-            redundancy_scores = self._compute_redundancy_batch(population, chunk_matrix)
-
-            # Entity chaining (multi-hop)
-            chaining_scores = self._compute_chaining_batch(population, entity_adj)
-
-            # Fitness = alpha * coverage + gamma * chaining - beta * redundancy
-            fitness = (
-                alpha * coverage_scores
-                + gamma * chaining_scores
-                - beta * redundancy_scores
+            child = self._crossover(
+                population[p1_idx], population[p2_idx],
+                chunk_matrix, k, M, mutation_rate,
             )
+            child_fitness = self._fitness(child, query_vec, chunk_matrix, sim_matrix)
 
-            # Track best
-            gen_best_idx = np.argmax(fitness)
-            gen_best_fitness = fitness[gen_best_idx]
+            worse_idx = p1_idx if fitness[p1_idx] < fitness[p2_idx] else p2_idx
+            if child_fitness > fitness[worse_idx]:
+                population[worse_idx] = child
+                fitness[worse_idx] = child_fitness
 
-            if gen_best_fitness > best_fitness:
-                best_fitness = gen_best_fitness
-                best_genome = population[gen_best_idx].tolist()
+            if child_fitness > best_fitness:
+                best_fitness = child_fitness
+                best_genome = child.tolist()
                 stale_generations = 0
             else:
                 stale_generations += 1
 
             if stale_generations >= self.early_stop_patience:
-                logger.debug(f"GA early stop at generation {gen} (no improvement for {self.early_stop_patience} gens)")
+                logger.debug(
+                    f"GA early stop at gen {gen} (no improvement for "
+                    f"{self.early_stop_patience} gens)"
+                )
                 break
 
-            # Selection: top 50% survive
-            sorted_indices = np.argsort(fitness)[::-1]
-            n_survivors = pop_size // 2
-            survivors = population[sorted_indices[:n_survivors]].copy()
-
-            # Offspring: crossover + mutation
-            new_pop = survivors.copy()
-            n_offspring = pop_size - n_survivors
-            offspring = np.empty((n_offspring, k), dtype=np.int32)
-
-            for i in range(n_offspring):
-                # Pick two parents via tournament selection (size 3)
-                t1 = random.sample(range(n_survivors), min(3, n_survivors))
-                t2 = random.sample(range(n_survivors), min(3, n_survivors))
-                p1 = survivors[min(t1)]
-                p2 = survivors[min(t2)]
-
-                # Single-point crossover
-                cx = random.randint(1, k - 1)
-                child = np.concatenate([p1[:cx], p2[cx:]])
-
-                # Deduplicate
-                seen = set()
-                for j in range(len(child)):
-                    if child[j] in seen:
-                        new_val = random.randint(0, M - 1)
-                        attempts = 0
-                        while new_val in seen and attempts < 10:
-                            new_val = random.randint(0, M - 1)
-                            attempts += 1
-                        child[j] = new_val
-                    seen.add(child[j])
-
-                # Mutation
-                if random.random() < mutation_rate:
-                    pos = random.randint(0, k - 1)
-                    new_val = random.randint(0, M - 1)
-                    child_set = set(child.tolist())
-                    attempts = 0
-                    while new_val in child_set and attempts < 10:
-                        new_val = random.randint(0, M - 1)
-                        attempts += 1
-                    if new_val not in child_set:
-                        child[pos] = new_val
-
-                offspring[i] = child
-
-            population = np.vstack([new_pop, offspring])
-
-        return best_genome if best_genome else population[0].tolist()
+        return best_genome
 
     def retrieve(self, query: str, limit: int = 5) -> List[str]:
         """
-        Two-stage retrieval with multi-hop entity chaining:
-        1. Vector search: get top-N candidates
-        2. GA: select optimal k from candidates, optimizing for
-           coverage + entity chaining - redundancy
+        Two-stage retrieval:
+        1. Vector search: get top-N semantically relevant candidates
+        2. GA: select optimal k from candidates (coverage + diversity)
         """
         t0 = time.perf_counter()
 
@@ -375,25 +314,23 @@ class EvolutionaryRAGSystem(RAGSystem):
         t1 = time.perf_counter()
 
         # Build token matrices
-        coverage_per_chunk, chunk_matrix = self._build_matrices(query, candidate_texts)
+        query_vec, chunk_matrix = self._build_matrices(query, candidate_texts)
 
-        # Build entity adjacency matrix for multi-hop chaining
-        entity_adj = self._build_entity_adjacency(candidate_texts)
+        # Precompute pairwise similarity for diversity penalty
+        sim_matrix = self._build_similarity_matrix(chunk_matrix)
 
         t2 = time.perf_counter()
 
-        # Stage 2: GA optimization with entity chaining
+        # Stage 2: GA optimization
         k = self.evolution_config.k_initial
-        best_indices = self._run_ga(coverage_per_chunk, chunk_matrix, entity_adj, k)
+        best_indices = self._run_ga(query_vec, chunk_matrix, sim_matrix, k)
 
         t3 = time.perf_counter()
 
         selected = [candidate_texts[i] for i in best_indices]
 
-        n_edges = np.triu(entity_adj, k=1).sum()
         logger.info(
-            f"Two-stage: {len(candidates)} -> {len(selected)} chunks | "
-            f"entity_edges={int(n_edges)} | "
+            f"Evolutionary: {len(candidates)} candidates -> {len(selected)} selected | "
             f"search={t1-t0:.3f}s build={t2-t1:.3f}s GA={t3-t2:.3f}s"
         )
 
