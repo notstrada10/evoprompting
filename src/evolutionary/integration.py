@@ -6,7 +6,7 @@ from .evolution import EvolutionConfig, EvolutionResult, evolve_chunks
 
 
 def get_all_chunks(db: VectorDatabase) -> List[str]:
-    conn = db._ensure_connection()
+    conn = db.ensure_connection()
     with conn.cursor() as cur:
         cur.execute(f"SELECT text FROM {db.table_name} ORDER BY id;")
         return [row[0] for row in cur.fetchall()]

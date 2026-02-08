@@ -1,21 +1,18 @@
 """
-Evolutionary RAG System - Vector Search + Evolutionary Selection.
+Evolutionary RAG: Vector Search + GA Selection.
 
-Stage 1: Vector search to get top-N semantically relevant candidates
-Stage 2: GA to select the optimal k-chunk combination from candidates
+Stage 1: Vector search for top-N candidates
+Stage 2: GA selects optimal k-chunk combination
 
-Fitness combines:
-  - KL divergence: how well the genome's token distribution matches the query
-  - Diversity: penalize redundant chunks (pairwise cosine similarity)
-
-Crossover = sum parent distributions, select k chunks closest to combined dist.
+Fitness = -KL(query || genome_dist) - diversity_weight * redundancy
+Crossover = sum parent distributions, pick top-k by dot product
 Replace worse parent if child is fitter.
 """
 import logging
 import random
 import time
 from collections import Counter
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -28,13 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 class EvolutionaryRAGSystem(RAGSystem):
-    """
-    Two-Stage Evolutionary RAG:
-
-    1. Vector search: get top-N semantically relevant candidates
-    2. GA: select optimal k-chunk combination maximizing
-       coverage (KL) + diversity - redundancy
-    """
 
     def __init__(
         self,
@@ -56,24 +46,16 @@ class EvolutionaryRAGSystem(RAGSystem):
         self.n_candidates = 100
         self.early_stop_patience = 15
         self.diversity_weight = 0.3
-        self._tokenizer: Optional[Tokenizer] = None
+        self.tokenizer_instance: Optional[Tokenizer] = None
 
     @property
     def tokenizer(self) -> Tokenizer:
-        if self._tokenizer is None:
-            self._tokenizer = Tokenizer.get_instance(self.evolution_config.model_name)
-        return self._tokenizer
+        if self.tokenizer_instance is None:
+            self.tokenizer_instance = Tokenizer.get_instance(self.evolution_config.model_name)
+        return self.tokenizer_instance
 
-    def _build_matrices(
-        self, query_text: str, candidate_texts: List[str]
-    ) -> Tuple[np.ndarray, csr_matrix]:
-        """
-        Batch-tokenize and build numpy structures for fitness evaluation.
-
-        Returns:
-            query_vec: dense query probability distribution (n_tokens,)
-            chunk_matrix: sparse chunk probability distributions (n_candidates, n_tokens)
-        """
+    def build_matrices(self, query_text: str, candidate_texts: list[str]) -> tuple[np.ndarray, csr_matrix]:
+        """Batch-tokenize query + candidates, return (query_vec, chunk_matrix) as sparse distributions."""
         all_texts = [query_text] + candidate_texts
         all_token_ids = self.tokenizer.encode_batch(all_texts)
 
@@ -112,41 +94,26 @@ class EvolutionaryRAGSystem(RAGSystem):
             (np.array(data, dtype=np.float32), (rows, cols)),
             shape=(n_candidates, n_tokens),
         )
-
         return query_vec, chunk_matrix
 
-    def _build_similarity_matrix(self, chunk_matrix: csr_matrix) -> np.ndarray:
-        """
-        Precompute pairwise cosine similarity between all candidate chunks.
-        Used to penalize redundant selections.
-        """
-        # Normalize rows to unit vectors
+    def build_similarity_matrix(self, chunk_matrix: csr_matrix) -> np.ndarray:
+        """Pairwise cosine similarity between all candidate chunk distributions."""
         norms = np.sqrt(np.asarray(chunk_matrix.power(2).sum(axis=1)).flatten())
         norms[norms == 0] = 1.0
-        # Diag matrix of inverse norms
         inv_norms = csr_matrix(np.diag(1.0 / norms))
         normalized = inv_norms @ chunk_matrix
-        # Cosine similarity = dot product of normalized vectors
         sim = (normalized @ normalized.T).toarray()
-        # Zero out diagonal (self-similarity)
         np.fill_diagonal(sim, 0.0)
         return sim
 
-    def _kl_divergence(
-        self, query_vec: np.ndarray, genome_dist: np.ndarray, epsilon: float = 1e-10
-    ) -> float:
-        """
-        Compute KL(query || genome_dist).
-        Only over tokens where query has non-zero probability.
-        """
+    def kl_divergence(self, query_vec: np.ndarray, genome_dist: np.ndarray, epsilon: float = 1e-10) -> float:
+        """KL(query || genome_dist), only over tokens where query > 0."""
         mask = query_vec > 0
         q = query_vec[mask]
         p = genome_dist[mask] + epsilon
         return float(np.sum(q * np.log(q / p)))
 
-    def _genome_distribution(
-        self, genome: np.ndarray, chunk_matrix: csr_matrix
-    ) -> np.ndarray:
+    def genome_distribution(self, genome: np.ndarray, chunk_matrix: csr_matrix) -> np.ndarray:
         """Sum and normalize token distributions of selected chunks."""
         combined = np.asarray(chunk_matrix[genome].sum(axis=0)).flatten()
         total = combined.sum()
@@ -154,23 +121,11 @@ class EvolutionaryRAGSystem(RAGSystem):
             combined /= total
         return combined
 
-    def _fitness(
-        self,
-        genome: np.ndarray,
-        query_vec: np.ndarray,
-        chunk_matrix: csr_matrix,
-        sim_matrix: np.ndarray,
-    ) -> float:
-        """
-        Fitness = -KL(query || genome_dist) - diversity_weight * avg_pairwise_similarity
+    def fitness(self, genome: np.ndarray, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray) -> float:
+        """Fitness = -KL(query || genome_dist) - diversity_weight * avg_pairwise_similarity."""
+        dist = self.genome_distribution(genome, chunk_matrix)
+        kl = self.kl_divergence(query_vec, dist)
 
-        First term: how well the chunks cover the query (higher = better).
-        Second term: penalize selecting chunks that are too similar to each other.
-        """
-        dist = self._genome_distribution(genome, chunk_matrix)
-        kl = self._kl_divergence(query_vec, dist)
-
-        # Average pairwise similarity among selected chunks
         k = len(genome)
         if k < 2:
             redundancy = 0.0
@@ -180,35 +135,14 @@ class EvolutionaryRAGSystem(RAGSystem):
 
         return -kl - self.diversity_weight * redundancy
 
-    def _fitness_batch(
-        self,
-        population: np.ndarray,
-        query_vec: np.ndarray,
-        chunk_matrix: csr_matrix,
-        sim_matrix: np.ndarray,
-    ) -> np.ndarray:
-        """Compute fitness for all genomes."""
+    def fitness_batch(self, population: np.ndarray, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray) -> np.ndarray:
         return np.array([
-            self._fitness(genome, query_vec, chunk_matrix, sim_matrix)
+            self.fitness(genome, query_vec, chunk_matrix, sim_matrix)
             for genome in population
         ], dtype=np.float32)
 
-    def _crossover(
-        self,
-        p1: np.ndarray,
-        p2: np.ndarray,
-        chunk_matrix: csr_matrix,
-        k: int,
-        M: int,
-        mutation_rate: float,
-    ) -> np.ndarray:
-        """
-        Distribution-based crossover:
-        1. Sum the two parents' token distributions
-        2. Score all candidates by dot product with combined dist
-        3. Select top-k as the child
-        4. Apply mutation
-        """
+    def crossover(self, p1: np.ndarray, p2: np.ndarray, chunk_matrix: csr_matrix, k: int, M: int, mutation_rate: float) -> np.ndarray:
+        """Sum parent distributions, pick top-k candidates by dot product, mutate."""
         parent_dist = (
             np.asarray(chunk_matrix[p1].sum(axis=0)).flatten()
             + np.asarray(chunk_matrix[p2].sum(axis=0)).flatten()
@@ -229,17 +163,8 @@ class EvolutionaryRAGSystem(RAGSystem):
 
         return top_k
 
-    def _run_ga(
-        self,
-        query_vec: np.ndarray,
-        chunk_matrix: csr_matrix,
-        sim_matrix: np.ndarray,
-        k: int,
-    ) -> List[int]:
-        """
-        GA with KL divergence + diversity fitness and distribution crossover.
-        Replace worse parent if child is fitter.
-        """
+    def run_ga(self, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray, k: int) -> list[int]:
+        """Steady-state GA: tournament select parents, crossover, replace worse parent if child is better."""
         M = chunk_matrix.shape[0]
         if M <= k:
             return list(range(M))
@@ -252,29 +177,29 @@ class EvolutionaryRAGSystem(RAGSystem):
             random.sample(range(M), k) for _ in range(pop_size)
         ], dtype=np.int32)
 
-        fitness = self._fitness_batch(population, query_vec, chunk_matrix, sim_matrix)
+        fit = self.fitness_batch(population, query_vec, chunk_matrix, sim_matrix)
 
-        best_idx = np.argmax(fitness)
-        best_fitness = fitness[best_idx]
+        best_idx = np.argmax(fit)
+        best_fitness = fit[best_idx]
         best_genome = population[best_idx].tolist()
         stale_generations = 0
 
         for gen in range(generations):
             t1 = random.sample(range(pop_size), min(3, pop_size))
             t2 = random.sample(range(pop_size), min(3, pop_size))
-            p1_idx = max(t1, key=lambda i: fitness[i])
-            p2_idx = max(t2, key=lambda i: fitness[i])
+            p1_idx = max(t1, key=lambda i: fit[i])
+            p2_idx = max(t2, key=lambda i: fit[i])
 
-            child = self._crossover(
+            child = self.crossover(
                 population[p1_idx], population[p2_idx],
                 chunk_matrix, k, M, mutation_rate,
             )
-            child_fitness = self._fitness(child, query_vec, chunk_matrix, sim_matrix)
+            child_fitness = self.fitness(child, query_vec, chunk_matrix, sim_matrix)
 
-            worse_idx = p1_idx if fitness[p1_idx] < fitness[p2_idx] else p2_idx
-            if child_fitness > fitness[worse_idx]:
+            worse_idx = p1_idx if fit[p1_idx] < fit[p2_idx] else p2_idx
+            if child_fitness > fit[worse_idx]:
                 population[worse_idx] = child
-                fitness[worse_idx] = child_fitness
+                fit[worse_idx] = child_fitness
 
             if child_fitness > best_fitness:
                 best_fitness = child_fitness
@@ -284,54 +209,38 @@ class EvolutionaryRAGSystem(RAGSystem):
                 stale_generations += 1
 
             if stale_generations >= self.early_stop_patience:
-                logger.debug(
-                    f"GA early stop at gen {gen} (no improvement for "
-                    f"{self.early_stop_patience} gens)"
-                )
+                logger.debug(f"GA early stop at gen {gen} (no improvement for {self.early_stop_patience} gens)")
                 break
 
         return best_genome
 
-    def retrieve(self, query: str, limit: int = 5) -> List[str]:
-        """
-        Two-stage retrieval:
-        1. Vector search: get top-N semantically relevant candidates
-        2. GA: select optimal k from candidates (coverage + diversity)
-        """
+    def retrieve(self, query: str, limit: int = 5) -> list[str]:
+        """Two-stage: vector search candidates -> GA selection."""
         t0 = time.perf_counter()
 
-        # Stage 1: Vector search for candidates
         candidates = self.vector_search.search(query, limit=self.n_candidates)
-
         if not candidates:
             return []
 
         candidate_texts = [c[1] for c in candidates]
-
         if len(candidates) <= limit:
             return candidate_texts
 
         t1 = time.perf_counter()
 
-        # Build token matrices
-        query_vec, chunk_matrix = self._build_matrices(query, candidate_texts)
-
-        # Precompute pairwise similarity for diversity penalty
-        sim_matrix = self._build_similarity_matrix(chunk_matrix)
+        query_vec, chunk_matrix = self.build_matrices(query, candidate_texts)
+        sim_matrix = self.build_similarity_matrix(chunk_matrix)
 
         t2 = time.perf_counter()
 
-        # Stage 2: GA optimization
         k = self.evolution_config.k_initial
-        best_indices = self._run_ga(query_vec, chunk_matrix, sim_matrix, k)
+        best_indices = self.run_ga(query_vec, chunk_matrix, sim_matrix, k)
 
         t3 = time.perf_counter()
 
         selected = [candidate_texts[i] for i in best_indices]
-
         logger.info(
             f"Evolutionary: {len(candidates)} candidates -> {len(selected)} selected | "
             f"search={t1-t0:.3f}s build={t2-t1:.3f}s GA={t3-t2:.3f}s"
         )
-
         return selected
