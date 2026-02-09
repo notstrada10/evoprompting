@@ -107,6 +107,8 @@ class VectorDatabase:
         conn = self.ensure_connection()
         with conn.cursor() as cur:
             query_array = np.array(query_embedding)
+            if limit > 40:
+                cur.execute(f"SET hnsw.ef_search = {limit + 50};")
             cur.execute(
                 f"""
                 SELECT id, text, 1 - (embedding <=> %s) as similarity, metadata
