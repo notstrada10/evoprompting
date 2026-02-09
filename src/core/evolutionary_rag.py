@@ -50,12 +50,20 @@ class EvolutionaryRAGSystem(RAGSystem):
 
     @property
     def tokenizer(self) -> Tokenizer:
-        if self.tokenizer_instance is None:
-            self.tokenizer_instance = Tokenizer.get_instance(self.evolution_config.model_name)
-        return self.tokenizer_instance
+        if self._tokenizer is None:
+            self._tokenizer = Tokenizer.get_instance(self.evolution_config.model_name)
+        return self._tokenizer
 
-    def build_matrices(self, query_text: str, candidate_texts: list[str]) -> tuple[np.ndarray, csr_matrix]:
-        """Batch-tokenize query + candidates, return (query_vec, chunk_matrix) as sparse distributions."""
+    def _build_matrices(
+        self, query_text: str, candidate_texts: List[str]
+    ) -> Tuple[np.ndarray, csr_matrix]:
+        """
+        Batch-tokenize and build numpy structures for fitness evaluation.
+
+        Returns:
+            query_vec: dense query probability distribution (n_tokens,)
+            chunk_matrix: sparse chunk probability distributions (n_candidates, n_tokens)
+        """
         all_texts = [query_text] + candidate_texts
         all_token_ids = self.tokenizer.encode_batch(all_texts)
 
@@ -121,11 +129,23 @@ class EvolutionaryRAGSystem(RAGSystem):
             combined /= total
         return combined
 
-    def fitness(self, genome: np.ndarray, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray) -> float:
-        """Fitness = -KL(query || genome_dist) - diversity_weight * avg_pairwise_similarity."""
-        dist = self.genome_distribution(genome, chunk_matrix)
-        kl = self.kl_divergence(query_vec, dist)
+    def _fitness(
+        self,
+        genome: np.ndarray,
+        query_vec: np.ndarray,
+        chunk_matrix: csr_matrix,
+        sim_matrix: np.ndarray,
+    ) -> float:
+        """
+        Fitness = -KL(query || genome_dist) - diversity_weight * avg_pairwise_similarity
 
+        First term: how well the chunks cover the query (higher = better).
+        Second term: penalize selecting chunks that are too similar to each other.
+        """
+        dist = self._genome_distribution(genome, chunk_matrix)
+        kl = self._kl_divergence(query_vec, dist)
+
+        # Average pairwise similarity among selected chunks
         k = len(genome)
         if k < 2:
             redundancy = 0.0
