@@ -5,8 +5,8 @@ Stage 1: Vector search for top-N candidates
 Stage 2: GA selects optimal k-chunk combination
 
 Fitness = -KL(query || genome_dist) - diversity_weight * redundancy
-Crossover = sum parent distributions, pick top-k by dot product
-Replace worse parent if child is fitter.
+Crossover = uniform (pool parents' genes, pick k, mutate)
+Tournament: 2 parents + 1 child, worst of 3 eliminated.
 """
 import logging
 import random
@@ -35,12 +35,10 @@ class EvolutionaryRAGSystem(RAGSystem):
         super().__init__(model=model, table_name=table_name)
 
         self.evolution_config = evolution_config or EvolutionConfig(
-            population_size=1000,
-            k_initial=50,
+            population_size=50,
+            k_initial=10,
             max_generations=100,
             mutation_rate=0.2,
-            alpha=1.0,
-            beta=0.1,
         )
 
         self.n_candidates = 100
@@ -141,37 +139,48 @@ class EvolutionaryRAGSystem(RAGSystem):
             for genome in population
         ], dtype=np.float32)
 
-    def crossover(self, p1: np.ndarray, p2: np.ndarray, chunk_matrix: csr_matrix, k: int, M: int, mutation_rate: float) -> np.ndarray:
-        """Sum parent distributions, pick top-k candidates by dot product, mutate."""
-        parent_dist = (
-            np.asarray(chunk_matrix[p1].sum(axis=0)).flatten()
-            + np.asarray(chunk_matrix[p2].sum(axis=0)).flatten()
-        )
-        total = parent_dist.sum()
-        if total > 0:
-            parent_dist /= total
+    def crossover(self, p1: np.ndarray, p2: np.ndarray, k: int, M: int, mutation_rate: float) -> np.ndarray:
+        """Uniform crossover: pool both parents' genes, pick k unique indices, mutate."""
+        pool = list(set(p1.tolist()) | set(p2.tolist()))
+        random.shuffle(pool)
 
-        scores = chunk_matrix.dot(parent_dist)
-        top_k = np.argsort(scores)[::-1][:k].copy()
+        if len(pool) >= k:
+            child = pool[:k]
+        else:
+            remaining = [i for i in range(M) if i not in set(pool)]
+            random.shuffle(remaining)
+            child = pool + remaining[:k - len(pool)]
 
-        if random.random() < mutation_rate:
-            pos = random.randint(0, k - 1)
-            selected_set = set(top_k.tolist())
-            non_selected = [i for i in range(M) if i not in selected_set]
-            if non_selected:
-                top_k[pos] = random.choice(non_selected)
+        # Mutation: swap random genes with non-selected candidates
+        child_set = set(child)
+        non_selected = [i for i in range(M) if i not in child_set]
+        for pos in range(k):
+            if random.random() < mutation_rate and non_selected:
+                swap_in = random.choice(non_selected)
+                non_selected.remove(swap_in)
+                non_selected.append(child[pos])
+                child[pos] = swap_in
 
-        return top_k
+        return np.array(child, dtype=np.int32)
 
-    def run_ga(self, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray, k: int) -> list[int]:
-        """Steady-state GA: tournament select parents, crossover, replace worse parent if child is better."""
+    def roulette_select(self, fit: np.ndarray) -> int:
+        """Fitness-proportionate selection. Shift fitness to positive values."""
+        shifted = fit - fit.min() + 1e-6
+        probs = shifted / shifted.sum()
+        return int(np.random.choice(len(fit), p=probs))
+
+    def run_ga(self, query_vec: np.ndarray, chunk_matrix: csr_matrix, sim_matrix: np.ndarray, k: int, track_convergence: bool = False) -> list[int] | tuple[list[int], list[float]]:
+        """Generational GA with elitism and roulette selection."""
         M = chunk_matrix.shape[0]
         if M <= k:
+            if track_convergence:
+                return list(range(M)), []
             return list(range(M))
 
         pop_size = self.evolution_config.population_size
         generations = self.evolution_config.max_generations
         mutation_rate = self.evolution_config.mutation_rate
+        elite_size = max(1, pop_size // 10)
 
         population = np.array([
             random.sample(range(M), k) for _ in range(pop_size)
@@ -184,34 +193,51 @@ class EvolutionaryRAGSystem(RAGSystem):
         best_genome = population[best_idx].tolist()
         stale_generations = 0
 
+        fitness_history = None
+        if track_convergence:
+            fitness_history = [{"best": float(best_fitness), "mean": float(fit.mean())}]
+
         for gen in range(generations):
-            t1 = random.sample(range(pop_size), min(3, pop_size))
-            t2 = random.sample(range(pop_size), min(3, pop_size))
-            p1_idx = max(t1, key=lambda i: fit[i])
-            p2_idx = max(t2, key=lambda i: fit[i])
+            # Elitism: keep top individuals
+            elite_indices = np.argsort(fit)[::-1][:elite_size]
+            new_population = list(population[elite_indices])
+            new_fit = list(fit[elite_indices])
 
-            child = self.crossover(
-                population[p1_idx], population[p2_idx],
-                chunk_matrix, k, M, mutation_rate,
-            )
-            child_fitness = self.fitness(child, query_vec, chunk_matrix, sim_matrix)
+            # Fill rest with offspring via roulette selection
+            while len(new_population) < pop_size:
+                p1_idx = self.roulette_select(fit)
+                p2_idx = self.roulette_select(fit)
 
-            worse_idx = p1_idx if fit[p1_idx] < fit[p2_idx] else p2_idx
-            if child_fitness > fit[worse_idx]:
-                population[worse_idx] = child
-                fit[worse_idx] = child_fitness
+                child = self.crossover(
+                    population[p1_idx], population[p2_idx],
+                    k, M, mutation_rate,
+                )
+                child_fitness = self.fitness(child, query_vec, chunk_matrix, sim_matrix)
+                new_population.append(child)
+                new_fit.append(child_fitness)
 
-            if child_fitness > best_fitness:
-                best_fitness = child_fitness
-                best_genome = child.tolist()
+            population = np.array(new_population, dtype=np.int32)
+            fit = np.array(new_fit, dtype=np.float32)
+
+            gen_best_idx = np.argmax(fit)
+            gen_best_fitness = fit[gen_best_idx]
+
+            if gen_best_fitness > best_fitness:
+                best_fitness = gen_best_fitness
+                best_genome = population[gen_best_idx].tolist()
                 stale_generations = 0
             else:
                 stale_generations += 1
+
+            if track_convergence:
+                fitness_history.append({"best": float(best_fitness), "mean": float(fit.mean())})
 
             if stale_generations >= self.early_stop_patience:
                 logger.debug(f"GA early stop at gen {gen} (no improvement for {self.early_stop_patience} gens)")
                 break
 
+        if track_convergence:
+            return best_genome, fitness_history
         return best_genome
 
     def retrieve(self, query: str, limit: int = 5) -> list[str]:
