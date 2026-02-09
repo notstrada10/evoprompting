@@ -36,12 +36,6 @@ class Distribution:
             combined = {k: v / total for k, v in combined.items()}
         return cls(combined)
 
-    def entropy(self) -> float:
-        h = 0.0
-        for prob in self.probs.values():
-            if prob > 0:
-                h -= prob * math.log(prob)
-        return h
 
     def kl_divergence(self, other: "Distribution", epsilon: float = 1e-9) -> float:
         if not self.probs:
