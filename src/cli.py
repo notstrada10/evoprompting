@@ -55,6 +55,7 @@ def benchmark_command(args):
             eval_split=args.eval_split,
             use_hyde=args.use_hyde,
             use_evolution=args.use_evolution,
+            use_bm25_evolution=args.use_bm25_evolution,
         )
 
 
@@ -71,6 +72,7 @@ def hotpotqa_command(args):
             retrieval_limit=args.retrieval_limit,
             use_hyde=args.use_hyde,
             use_evolution=args.use_evolution,
+            use_bm25_evolution=args.use_bm25_evolution,
         )
 
 
@@ -107,6 +109,8 @@ def main():
                                  help='Use HyDE RAG instead of standard RAG')
     benchmark_parser.add_argument('--use-evolution', action='store_true',
                                  help='Use evolutionary GA for chunk selection')
+    benchmark_parser.add_argument('--use-bm25-evolution', action='store_true',
+                                 help='Use BM25 + bit-string GA for chunk selection')
     benchmark_parser.add_argument('--llm-only', action='store_true',
                                  help='Run LLM-only baseline (no RAG)')
     benchmark_parser.add_argument('--subset', type=str, default='hotpotqa',
@@ -124,6 +128,8 @@ def main():
                                 help='Use HyDE RAG instead of standard RAG')
     hotpotqa_parser.add_argument('--use-evolution', action='store_true',
                                 help='Use evolutionary GA for chunk selection')
+    hotpotqa_parser.add_argument('--use-bm25-evolution', action='store_true',
+                                help='Use BM25 + bit-string GA for chunk selection')
     hotpotqa_parser.add_argument('--llm-only', action='store_true',
                                 help='Run LLM-only baseline (no RAG)')
 

@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from datasets import concatenate_datasets, load_dataset
 
 from ..config import Config
+from ..core.bm25_evolutionary_rag import BM25EvolutionaryRAGSystem
 from ..core.evolutionary_rag import EvolutionaryRAGSystem
 from ..core.hyde_rag import HyDERAGSystem
 from ..core.rag import RAGSystem
@@ -412,6 +413,7 @@ def run_benchmark_pipeline(
     eval_split: str = "test",
     use_hyde: bool = False,
     use_evolution: bool = False,
+    use_bm25_evolution: bool = False,
 ):
     """Run RAG benchmark pipeline."""
     config = _make_ragbench_config(subset)
@@ -419,7 +421,10 @@ def run_benchmark_pipeline(
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("="*60)
 
-    if use_evolution:
+    if use_bm25_evolution:
+        rag = BM25EvolutionaryRAGSystem()
+        rag_type = "BM25-evolutionary"
+    elif use_evolution:
         rag = EvolutionaryRAGSystem()
         rag_type = "evolutionary"
     elif use_hyde:

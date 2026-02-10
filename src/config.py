@@ -3,6 +3,7 @@ Configuration settings for the RAG system.
 Centralizes all configurable parameters to avoid hard-coded values throughout the codebase.
 """
 import os
+from dataclasses import dataclass
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -46,3 +47,13 @@ class Config:
         """Validate required configuration values are set."""
         if not cls.DATABASE_URL:
             raise ValueError("DATABASE_URL must be set in environment variables")
+
+
+@dataclass
+class EvolutionConfig:
+    """GA hyperparameters for evolutionary RAG variants."""
+    population_size: int = 20
+    k_initial: int = 5
+    max_generations: int = 100
+    mutation_rate: float = 0.1
+    model_name: str = "deepseek-ai/DeepSeek-V3"

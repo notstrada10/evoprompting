@@ -17,9 +17,9 @@ from typing import Optional
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from ..evolutionary.evolution import EvolutionConfig
-from ..evolutionary.tokenizer import Tokenizer
+from ..config import EvolutionConfig
 from .rag import RAGSystem
+from .tokenizer import Tokenizer
 
 logger = logging.getLogger(__name__)
 
