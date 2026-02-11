@@ -2,11 +2,14 @@
 Core modules for the RAG system.
 
 Infrastructure: database, embeddings, vector search, tokenizer.
-RAG variants: standard, HyDE, evolutionary (vector search + GA), BM25 evolutionary (BM25 + bit-string GA).
+RAG variants: standard, HyDE, evolutionary (vector search + GA),
+              BM25 evolutionary (BM25 + bit-string GA),
+              Bayesian evolutionary (BM25 + weighted probabilistic GA).
 """
 
 # Infrastructure
 # RAG variants
+from .bayesian_evolutionary_rag import BayesianEvolutionaryRAGSystem
 from .bm25_evolutionary_rag import BM25EvolutionaryRAGSystem
 from .db import VectorDatabase
 from .embeddings import EmbeddingService
@@ -27,4 +30,5 @@ __all__ = [
     "HyDERAGSystem",
     "EvolutionaryRAGSystem",
     "BM25EvolutionaryRAGSystem",
+    "BayesianEvolutionaryRAGSystem",
 ]

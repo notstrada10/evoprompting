@@ -13,6 +13,7 @@ from datasets import load_dataset
 from openai import AsyncOpenAI
 
 from ..config import Config
+from ..core.bayesian_evolutionary_rag import BayesianEvolutionaryRAGSystem
 from ..core.bm25_evolutionary_rag import BM25EvolutionaryRAGSystem
 from ..core.evolutionary_rag import EvolutionaryRAGSystem
 from ..core.hyde_rag import HyDERAGSystem
@@ -325,6 +326,7 @@ def run_hotpotqa_pipeline(
     use_hyde: bool = False,
     use_evolution: bool = False,
     use_bm25_evolution: bool = False,
+    use_bayesian_evolution: bool = False,
 ):
     """Run official HotPotQA benchmark pipeline."""
     config = HotPotQAConfig()
@@ -332,7 +334,10 @@ def run_hotpotqa_pipeline(
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("=" * 60)
 
-    if use_bm25_evolution:
+    if use_bayesian_evolution:
+        rag = BayesianEvolutionaryRAGSystem(table_name=config.table_name)
+        rag_type = "Bayesian-evolutionary"
+    elif use_bm25_evolution:
         rag = BM25EvolutionaryRAGSystem(table_name=config.table_name)
         rag_type = "BM25-evolutionary"
     elif use_evolution:
@@ -359,7 +364,7 @@ def run_hotpotqa_pipeline(
         logger.info(f"Evaluating on validation split ({len(eval_dataset)} samples)")
 
         # Evolution is CPU-heavy (GA + tokenization), reduce concurrency
-        evo_batch_size = 10 if (use_evolution or use_bm25_evolution) else None
+        evo_batch_size = 10 if (use_evolution or use_bm25_evolution or use_bayesian_evolution) else None
 
         results = asyncio.run(run_hotpotqa_benchmark_async(
             eval_dataset, config,
