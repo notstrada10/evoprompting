@@ -76,6 +76,7 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         self.embedding_service = EmbeddingService()
         self._bm25: Optional[BM25Okapi] = None
         self._corpus_texts: Optional[list[str]] = None
+        self._corpus_embeddings: Optional[np.ndarray] = None
         self._corpus_tokenized: Optional[list[list[str]]] = None
 
     @property
@@ -89,40 +90,41 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
     # =========================================================================
 
     def _ensure_bm25(self) -> None:
-        """Build BM25 index from all chunks in the database (lazy, built once)."""
+        """Build BM25 index + load stored embeddings from DB (lazy, built once)."""
         if self._bm25 is not None:
             return
-        rows = self.vector_search.db.get_all_chunks()
-        self._corpus_texts = [text for _, text in rows]
+        rows = self.vector_search.db.get_all_chunks_with_embeddings()
+        self._corpus_texts = [text for _, text, _ in rows]
+        self._corpus_embeddings = np.array(
+            [np.array(emb, dtype=np.float32) for _, _, emb in rows],
+            dtype=np.float32,
+        )
         self._corpus_tokenized = [text.lower().split() for text in self._corpus_texts]
         self._bm25 = BM25Okapi(self._corpus_tokenized)
-        logger.info(f"BM25 index built over {len(self._corpus_texts)} chunks")
+        logger.info(
+            f"BM25 index + embeddings loaded for {len(self._corpus_texts)} chunks "
+            f"(embeddings: {self._corpus_embeddings.shape})"
+        )
 
-    def bm25_search(self, query: str, n: int) -> list[str]:
-        """Return top-n chunks by BM25 score."""
+    def bm25_search(self, query: str, n: int) -> tuple[list[str], np.ndarray]:
+        """Return top-n (texts, embeddings) by BM25 score."""
         self._ensure_bm25()
         tokenized_query = query.lower().split()
         scores = self._bm25.get_scores(tokenized_query)
         top_indices = np.argsort(scores)[::-1][:n]
-        return [self._corpus_texts[i] for i in top_indices]
+        texts = [self._corpus_texts[i] for i in top_indices]
+        embeddings = self._corpus_embeddings[top_indices]
+        return texts, embeddings
 
     # =========================================================================
     # Embedding Construction
     # =========================================================================
 
-    def build_embeddings(self, query_text: str, candidate_texts: list[str]) -> tuple[np.ndarray, np.ndarray]:
-        """Embed query + candidates in one batch. Returns (query_emb, candidate_embs).
-
-        query_emb: shape (768,)
-        candidate_embs: shape (n_candidates, 768)
-        """
-        all_texts = [query_text] + candidate_texts
-        embeddings = self.embedding_service.get_embeddings_batch(all_texts)
-
-        query_emb = np.array(embeddings[0], dtype=np.float32)
-        candidate_embs = np.array(embeddings[1:], dtype=np.float32)
-
-        return query_emb, candidate_embs
+    def embed_query(self, query_text: str) -> np.ndarray:
+        """Embed just the query string. Returns shape (768,)."""
+        model = self.embedding_service.load_model()
+        emb = model.encode([query_text], show_progress_bar=False)
+        return np.asarray(emb[0], dtype=np.float32)
 
     def build_query_candidate_similarities(self, query_emb: np.ndarray, candidate_embs: np.ndarray) -> np.ndarray:
         """Cosine similarity between query and each candidate. Shape (n_candidates,)."""
@@ -194,52 +196,8 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         return bridge
 
     # =========================================================================
-    # Fitness Function
+    # Fitness Function (vectorized)
     # =========================================================================
-
-    def fitness(
-        self,
-        genome: np.ndarray,
-        query_cand_sims: np.ndarray,
-        embed_sim_matrix: np.ndarray,
-        bridge_matrix: np.ndarray,
-    ) -> float:
-        """Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging - gamma * Redundancy.
-
-        All precomputed — no per-evaluation embedding calls.
-        """
-        k = len(genome)
-        if k == 0:
-            return -1e6
-
-        # Semantic relevance: avg cosine(query_emb, chunk_emb) for selected chunks
-        relevance = float(query_cand_sims[genome].mean())
-
-        # Marginal gain: avg leave-one-out relevance drop
-        if k <= 1:
-            mg = 0.0
-        else:
-            total_mg = 0.0
-            for i in range(k):
-                reduced = np.concatenate([genome[:i], genome[i+1:]])
-                reduced_rel = float(query_cand_sims[reduced].mean())
-                total_mg += relevance - reduced_rel
-            mg = total_mg / k
-
-        # Bridging and redundancy
-        if k < 2:
-            bridging = 0.0
-            redundancy = 0.0
-        else:
-            n_pairs = k * (k - 1) / 2
-
-            sub_bridge = bridge_matrix[np.ix_(genome, genome)]
-            bridging = np.triu(sub_bridge, k=1).sum() / n_pairs
-
-            sub_sim = embed_sim_matrix[np.ix_(genome, genome)]
-            redundancy = np.triu(sub_sim, k=1).sum() / n_pairs
-
-        return relevance + self.alpha * mg + self.beta * bridging - self.gamma * redundancy
 
     def fitness_batch(
         self,
@@ -248,20 +206,67 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
     ) -> np.ndarray:
-        return np.array([
-            self.fitness(genome, query_cand_sims, embed_sim_matrix, bridge_matrix)
-            for genome in population
-        ], dtype=np.float32)
+        """Vectorized fitness for entire population at once.
+
+        population: (pop_size, k) int32
+        Returns: (pop_size,) float32
+        """
+        pop_size, k = population.shape
+
+        # ---- Semantic relevance: mean query-chunk similarity per genome ----
+        # Gather: (pop_size, k)
+        sims = query_cand_sims[population]
+        relevance = sims.mean(axis=1)  # (pop_size,)
+
+        # ---- Marginal gain (vectorized leave-one-out) ----
+        # For each genome, leave-one-out mean = (total - s_i) / (k-1)
+        # Marginal gain_i = mean_full - mean_without_i
+        #                  = mean_full - (sum - s_i)/(k-1)
+        # avg MG = (1/k) * sum_i [ mean_full - (sum - s_i)/(k-1) ]
+        if k <= 1:
+            mg = np.zeros(pop_size, dtype=np.float32)
+        else:
+            sim_sum = sims.sum(axis=1, keepdims=True)  # (pop_size, 1)
+            loo_means = (sim_sum - sims) / (k - 1)     # (pop_size, k)
+            mg = (relevance[:, None] - loo_means).mean(axis=1)  # (pop_size,)
+
+        # ---- Bridging, redundancy & chain coverage (batch submatrix extraction) ----
+        if k < 2:
+            bridging = np.zeros(pop_size, dtype=np.float32)
+            redundancy = np.zeros(pop_size, dtype=np.float32)
+        else:
+            n_pairs = k * (k - 1) / 2
+            # Build (pop_size, k, k) submatrices via advanced indexing
+            row_idx = population[:, :, None]  # (pop_size, k, 1)
+            col_idx = population[:, None, :]  # (pop_size, 1, k)
+
+            sub_bridge = bridge_matrix[row_idx, col_idx]     # (pop_size, k, k)
+            sub_sim = embed_sim_matrix[row_idx, col_idx]     # (pop_size, k, k)
+
+            # Upper triangle mask (same for all genomes)
+            triu_mask = np.triu(np.ones((k, k), dtype=bool), k=1)
+
+            bridging = sub_bridge[:, triu_mask].sum(axis=1) / n_pairs      # (pop_size,)
+            redundancy = sub_sim[:, triu_mask].sum(axis=1) / n_pairs       # (pop_size,)
+
+        return (relevance + self.alpha * mg + self.beta * bridging
+                - self.gamma * redundancy).astype(np.float32)
+
+    def fitness_single(
+        self,
+        genome: np.ndarray,
+        query_cand_sims: np.ndarray,
+        embed_sim_matrix: np.ndarray,
+        bridge_matrix: np.ndarray,
+    ) -> float:
+        """Single-genome fitness (wraps batch for consistency)."""
+        return float(self.fitness_batch(
+            genome[None, :], query_cand_sims, embed_sim_matrix, bridge_matrix
+        )[0])
 
     # =========================================================================
     # GA Operators
     # =========================================================================
-
-    def roulette_select(self, fit: np.ndarray) -> int:
-        """Fitness-proportionate selection. Shift fitness to positive values."""
-        shifted = fit - fit.min() + 1e-6
-        probs = shifted / shifted.sum()
-        return int(np.random.choice(len(fit), p=probs))
 
     def crossover(
         self,
@@ -272,34 +277,30 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims: np.ndarray,
         mutation_rate: float,
     ) -> np.ndarray:
-        """Semantic-aware crossover: pool parents, rank by query similarity, take top-k.
-
-        1. Merge both parents' chunks
-        2. Rank by individual semantic relevance to query
-        3. Take top-k
-        4. Mutation: replace lowest-relevance chunk with random outsider
-        """
-        pool = list(set(p1.tolist()) | set(p2.tolist()))
+        """Semantic-aware crossover: pool parents, rank by query similarity, take top-k."""
+        pool = np.union1d(p1, p2)
 
         if len(pool) <= k:
-            remaining = [i for i in range(M) if i not in set(pool)]
-            random.shuffle(remaining)
-            pool = pool + remaining[:k - len(pool)]
-            child = np.array(pool[:k], dtype=np.int32)
+            mask = np.ones(M, dtype=bool)
+            mask[pool] = False
+            remaining = np.where(mask)[0]
+            np.random.shuffle(remaining)
+            pool = np.concatenate([pool, remaining[:k - len(pool)]])
+            child = pool[:k].astype(np.int32)
         else:
-            # Rank by semantic relevance
-            scored = [(idx, query_cand_sims[idx]) for idx in pool]
-            scored.sort(key=lambda x: x[1], reverse=True)
-            child = np.array([s[0] for s in scored[:k]], dtype=np.int32)
+            # Rank by semantic relevance — numpy argsort
+            pool_sims = query_cand_sims[pool]
+            top_k_pos = np.argpartition(pool_sims, -k)[-k:]
+            child = pool[top_k_pos].astype(np.int32)
 
-        # Mutation: replace lowest-relevance chunk
+        # Mutation: replace lowest-relevance chunk with random outsider
         if random.random() < mutation_rate:
-            child_set = set(child.tolist())
-            non_selected = [i for i in range(M) if i not in child_set]
-            if non_selected:
-                sims = query_cand_sims[child]
-                worst_pos = int(np.argmin(sims))
-                child[worst_pos] = random.choice(non_selected)
+            mask = np.ones(M, dtype=bool)
+            mask[child] = False
+            outsiders = np.where(mask)[0]
+            if len(outsiders) > 0:
+                worst_pos = int(np.argmin(query_cand_sims[child]))
+                child[worst_pos] = outsiders[np.random.randint(len(outsiders))]
 
         return child
 
@@ -424,28 +425,32 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         if track_convergence:
             fitness_history = [{"best": float(best_fitness), "mean": float(fit.mean())}]
 
+        # Pre-compute roulette probabilities helper
+        n_children = pop_size - elite_size
+
         for gen in range(generations):
             elite_order = np.argsort(fit)[::-1][:elite_size]
-            new_population = [population[i].copy() for i in elite_order]
-            new_fit = [fit[i] for i in elite_order]
 
-            while len(new_population) < pop_size:
-                p1_idx = self.roulette_select(fit)
-                p2_idx = self.roulette_select(fit)
+            # Produce all children at once
+            children = np.empty((n_children, k), dtype=np.int32)
+            # Roulette probabilities (reuse for all selections this gen)
+            shifted = fit - fit.min() + 1e-6
+            probs = shifted / shifted.sum()
 
-                child = self.crossover(
+            for c in range(n_children):
+                p1_idx = int(np.random.choice(pop_size, p=probs))
+                p2_idx = int(np.random.choice(pop_size, p=probs))
+                children[c] = self.crossover(
                     population[p1_idx], population[p2_idx],
                     k, M, query_cand_sims, mutation_rate,
                 )
 
-                child_fitness = self.fitness(
-                    child, query_cand_sims, embed_sim_matrix, bridge_matrix,
-                )
-                new_population.append(child)
-                new_fit.append(child_fitness)
+            # Batch fitness for all children in one call
+            children_fit = self.fitness_batch(children, query_cand_sims, embed_sim_matrix, bridge_matrix)
 
-            population = np.array(new_population, dtype=np.int32)
-            fit = np.array(new_fit, dtype=np.float32)
+            # Assemble new population: elites + children
+            population = np.concatenate([population[elite_order], children], axis=0)
+            fit = np.concatenate([fit[elite_order], children_fit])
 
             gen_best_idx = int(np.argmax(fit))
             gen_best_fitness = fit[gen_best_idx]
@@ -480,7 +485,7 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         """Two-stage: BM25 candidate pre-filter -> embedding-aware GA selection."""
         t0 = time.perf_counter()
 
-        candidate_texts = self.bm25_search(query, self.n_candidates)
+        candidate_texts, candidate_embs = self.bm25_search(query, self.n_candidates)
         if not candidate_texts:
             return []
 
@@ -490,8 +495,8 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
 
         t1 = time.perf_counter()
 
-        # Embed query + candidates (one batch call)
-        query_emb, candidate_embs = self.build_embeddings(query, candidate_texts)
+        # Embed only the query (stored embeddings used for candidates)
+        query_emb = self.embed_query(query)
         query_cand_sims = self.build_query_candidate_similarities(query_emb, candidate_embs)
         embed_sim_matrix = self.build_candidate_similarity_matrix(candidate_embs)
 

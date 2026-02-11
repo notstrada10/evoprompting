@@ -142,6 +142,13 @@ class VectorDatabase:
             cur.execute(f"SELECT id, text FROM {self.table_name} ORDER BY id;")
             return cur.fetchall()
 
+    def get_all_chunks_with_embeddings(self) -> list[tuple[int, str, Any]]:
+        """Fetch all (id, text, embedding) rows. Embedding is a numpy array."""
+        conn = self.ensure_connection()
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT id, text, embedding FROM {self.table_name} ORDER BY id;")
+            return cur.fetchall()
+
     def get_random_chunks(self, limit: int) -> list[tuple[int, str]]:
         conn = self.ensure_connection()
         with conn.cursor() as cur:
