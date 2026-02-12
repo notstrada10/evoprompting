@@ -10,7 +10,8 @@ Embeddings provide the semantic signal that tokens can't.
 
 Genome = array of k chunk indices
 
-Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging - gamma * Redundancy
+Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging
+         + ig_weight * InformationGain - gamma * Redundancy
 
   - SemanticRelevance: avg cosine similarity between query embedding and
       selected chunk embeddings. This is the primary signal — chunks must be
@@ -24,6 +25,11 @@ Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging - gamma * R
       Kept from token-level because rare-token overlap between chunks is
       still a valid multi-hop signal (chunks about related topics share
       domain-specific terms).
+
+  - InformationGain: KL(posterior || prior) where prior = query token
+      distribution and posterior = sequential Bayesian update from selected
+      chunks. Rewards chunk sets that shift belief away from the naive query
+      — i.e. chunks that bring surprising but relevant new information.
 
   - Redundancy: avg pairwise embedding cosine similarity between selected
       chunks. Penalize semantically near-duplicate chunks.
@@ -72,6 +78,7 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         self.alpha = 0.3       # Marginal gain weight
         self.beta = 0.3        # Bridging weight (rare-token multi-hop signal)
         self.gamma = 0.3       # Redundancy penalty weight (embedding-based)
+        self.ig_weight = 0   # Information gain weight (Bayesian belief shift)
         self.tokenizer_instance: Optional[Tokenizer] = None
         self.embedding_service = EmbeddingService()
         self._bm25: Optional[BM25Okapi] = None
@@ -144,14 +151,20 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
     # Token-level matrices (for bridging only)
     # =========================================================================
 
-    def build_token_matrices(self, query_text: str, candidate_texts: list[str]) -> csr_matrix:
-        """Batch-tokenize candidates, return chunk_matrix for bridging computation."""
+    def build_token_matrices(self, query_text: str, candidate_texts: list[str]) -> tuple[csr_matrix, np.ndarray]:
+        """Batch-tokenize candidates, return (chunk_matrix, query_vector).
+
+        chunk_matrix: (n_candidates, n_tokens) sparse — token distributions per chunk
+        query_vector: (n_tokens,) dense — query token distribution (prior for IG)
+        """
         all_texts = [query_text] + candidate_texts
         all_token_ids = self.tokenizer.encode_batch(all_texts)
 
+        query_ids = all_token_ids[0]
         candidate_ids_list = all_token_ids[1:]
 
         all_token_set: set[int] = set()
+        all_token_set.update(query_ids)
         candidate_counters = []
         candidate_totals = []
         for ids in candidate_ids_list:
@@ -163,6 +176,14 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         n_tokens = len(token_to_col)
         n_candidates = len(candidate_texts)
 
+        # Build query vector (prior distribution)
+        query_vec = np.zeros(n_tokens, dtype=np.float32)
+        if len(query_ids) > 0:
+            query_counts = Counter(query_ids)
+            for tid, count in query_counts.items():
+                query_vec[token_to_col[tid]] = count / len(query_ids)
+
+        # Build chunk matrix
         rows, cols, data = [], [], []
         for i, (counts, total) in enumerate(zip(candidate_counters, candidate_totals)):
             if total == 0:
@@ -172,10 +193,11 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
                 cols.append(token_to_col[tid])
                 data.append(count / total)
 
-        return csr_matrix(
+        chunk_matrix = csr_matrix(
             (np.array(data, dtype=np.float32), (rows, cols)),
             shape=(n_candidates, n_tokens),
         )
+        return chunk_matrix, query_vec
 
     def build_idf_weights(self, chunk_matrix: csr_matrix) -> np.ndarray:
         """IDF(t) = log(N / df(t)). Rare tokens get high IDF."""
@@ -205,24 +227,23 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims: np.ndarray,
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
+        query_vec: np.ndarray,
+        chunk_matrix_dense: np.ndarray,
     ) -> np.ndarray:
         """Vectorized fitness for entire population at once.
 
         population: (pop_size, k) int32
+        query_vec: (n_tokens,) — query token distribution (prior)
+        chunk_matrix_dense: (n_candidates, n_tokens) — chunk token distributions
         Returns: (pop_size,) float32
         """
         pop_size, k = population.shape
 
         # ---- Semantic relevance: mean query-chunk similarity per genome ----
-        # Gather: (pop_size, k)
-        sims = query_cand_sims[population]
-        relevance = sims.mean(axis=1)  # (pop_size,)
+        sims = query_cand_sims[population]  # (pop_size, k)
+        relevance = sims.mean(axis=1)       # (pop_size,)
 
         # ---- Marginal gain (vectorized leave-one-out) ----
-        # For each genome, leave-one-out mean = (total - s_i) / (k-1)
-        # Marginal gain_i = mean_full - mean_without_i
-        #                  = mean_full - (sum - s_i)/(k-1)
-        # avg MG = (1/k) * sum_i [ mean_full - (sum - s_i)/(k-1) ]
         if k <= 1:
             mg = np.zeros(pop_size, dtype=np.float32)
         else:
@@ -230,27 +251,42 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
             loo_means = (sim_sum - sims) / (k - 1)     # (pop_size, k)
             mg = (relevance[:, None] - loo_means).mean(axis=1)  # (pop_size,)
 
-        # ---- Bridging, redundancy & chain coverage (batch submatrix extraction) ----
+        # ---- Bridging & redundancy (batch submatrix extraction) ----
         if k < 2:
             bridging = np.zeros(pop_size, dtype=np.float32)
             redundancy = np.zeros(pop_size, dtype=np.float32)
         else:
             n_pairs = k * (k - 1) / 2
-            # Build (pop_size, k, k) submatrices via advanced indexing
             row_idx = population[:, :, None]  # (pop_size, k, 1)
             col_idx = population[:, None, :]  # (pop_size, 1, k)
 
             sub_bridge = bridge_matrix[row_idx, col_idx]     # (pop_size, k, k)
             sub_sim = embed_sim_matrix[row_idx, col_idx]     # (pop_size, k, k)
 
-            # Upper triangle mask (same for all genomes)
             triu_mask = np.triu(np.ones((k, k), dtype=bool), k=1)
+            bridging = sub_bridge[:, triu_mask].sum(axis=1) / n_pairs
+            redundancy = sub_sim[:, triu_mask].sum(axis=1) / n_pairs
 
-            bridging = sub_bridge[:, triu_mask].sum(axis=1) / n_pairs      # (pop_size,)
-            redundancy = sub_sim[:, triu_mask].sum(axis=1) / n_pairs       # (pop_size,)
+        # ---- Information Gain: KL(posterior || prior) ----
+        # Prior = query token distribution
+        # Posterior = mean token distribution of selected chunks
+        # IG = sum_t posterior(t) * log(posterior(t) / prior(t))
+        # High IG = chunks shifted belief away from query (new information)
+        eps = 1e-8
+        prior = query_vec + eps                        # (n_tokens,)
+        prior = prior / prior.sum()                    # normalize
+
+        # Gather selected chunk distributions: (pop_size, k, n_tokens)
+        selected_dists = chunk_matrix_dense[population]
+        # Posterior = mean over selected chunks
+        posterior = selected_dists.mean(axis=1) + eps   # (pop_size, n_tokens)
+        posterior = posterior / posterior.sum(axis=1, keepdims=True)  # normalize
+
+        # KL divergence: sum_t posterior(t) * log(posterior(t) / prior(t))
+        ig = (posterior * np.log(posterior / prior[None, :])).sum(axis=1)  # (pop_size,)
 
         return (relevance + self.alpha * mg + self.beta * bridging
-                - self.gamma * redundancy).astype(np.float32)
+                + self.ig_weight * ig - self.gamma * redundancy).astype(np.float32)
 
     def fitness_single(
         self,
@@ -258,10 +294,13 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims: np.ndarray,
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
+        query_vec: np.ndarray,
+        chunk_matrix_dense: np.ndarray,
     ) -> float:
         """Single-genome fitness (wraps batch for consistency)."""
         return float(self.fitness_batch(
-            genome[None, :], query_cand_sims, embed_sim_matrix, bridge_matrix
+            genome[None, :], query_cand_sims, embed_sim_matrix, bridge_matrix,
+            query_vec, chunk_matrix_dense,
         )[0])
 
     # =========================================================================
@@ -395,9 +434,11 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
         k: int,
+        query_vec: np.ndarray,
+        chunk_matrix_dense: np.ndarray,
         track_convergence: bool = False,
     ) -> list[int] | tuple[list[int], list[dict]]:
-        """Generational GA with embedding-based fitness."""
+        """Generational GA with embedding-based + information gain fitness."""
         M = len(query_cand_sims)
         if M <= k:
             result = list(range(M))
@@ -414,7 +455,8 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         population = self.diverse_seeded_population(query_cand_sims, M, k, pop_size)
 
         # Evaluate initial population
-        fit = self.fitness_batch(population, query_cand_sims, embed_sim_matrix, bridge_matrix)
+        fit = self.fitness_batch(population, query_cand_sims, embed_sim_matrix, bridge_matrix,
+                                query_vec, chunk_matrix_dense)
 
         best_idx = int(np.argmax(fit))
         best_fitness = fit[best_idx]
@@ -446,7 +488,8 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
                 )
 
             # Batch fitness for all children in one call
-            children_fit = self.fitness_batch(children, query_cand_sims, embed_sim_matrix, bridge_matrix)
+            children_fit = self.fitness_batch(children, query_cand_sims, embed_sim_matrix, bridge_matrix,
+                                              query_vec, chunk_matrix_dense)
 
             # Assemble new population: elites + children
             population = np.concatenate([population[elite_order], children], axis=0)
@@ -500,15 +543,17 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims = self.build_query_candidate_similarities(query_emb, candidate_embs)
         embed_sim_matrix = self.build_candidate_similarity_matrix(candidate_embs)
 
-        # Token-level bridge matrix (rare-token sharing for multi-hop)
-        chunk_matrix = self.build_token_matrices(query, candidate_texts)
+        # Token-level matrices (bridging + IG prior/posterior)
+        chunk_matrix, query_vec = self.build_token_matrices(query, candidate_texts)
         idf_weights = self.build_idf_weights(chunk_matrix)
         bridge_matrix = self.build_rare_token_bridge_matrix(chunk_matrix, idf_weights)
+        chunk_matrix_dense = chunk_matrix.toarray()
 
         t2 = time.perf_counter()
 
         best_indices = self.run_ga(
             query_cand_sims, embed_sim_matrix, bridge_matrix, k,
+            query_vec, chunk_matrix_dense,
         )
 
         t3 = time.perf_counter()
