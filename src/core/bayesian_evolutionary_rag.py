@@ -11,7 +11,7 @@ Embeddings provide the semantic signal that tokens can't.
 Genome = array of k chunk indices
 
 Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging
-         + ig_weight * InformationGain - gamma * Redundancy
+         + ig_weight * EmbeddingIG - gamma * Redundancy
 
   - SemanticRelevance: avg cosine similarity between query embedding and
       selected chunk embeddings. This is the primary signal — chunks must be
@@ -26,10 +26,9 @@ Fitness = SemanticRelevance + alpha * MarginalGain + beta * Bridging
       still a valid multi-hop signal (chunks about related topics share
       domain-specific terms).
 
-  - InformationGain: KL(posterior || prior) where prior = query token
-      distribution and posterior = sequential Bayesian update from selected
-      chunks. Rewards chunk sets that shift belief away from the naive query
-      — i.e. chunks that bring surprising but relevant new information.
+  - EmbeddingIG: sim(chunk, anchors) * (1 - sim(chunk, query)).
+      Rewards chunks that are semantically close to first-hop anchors but
+      far from the query itself — the second-hop bridge signal.
 
   - Redundancy: avg pairwise embedding cosine similarity between selected
       chunks. Penalize semantically near-duplicate chunks.
@@ -77,8 +76,8 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         self.early_stop_patience = 15
         self.alpha = 0.3       # Marginal gain weight
         self.beta = 0.3        # Bridging weight (rare-token multi-hop signal)
-        self.gamma = 0.3       # Redundancy penalty weight (embedding-based)
-        self.ig_weight = 0   # Information gain weight (Bayesian belief shift)
+        self.gamma = 0.2       # Redundancy penalty weight (embedding-based)
+        self.ig_weight = 0.2   # Information gain weight (Bayesian belief shift)
         self.tokenizer_instance: Optional[Tokenizer] = None
         self.embedding_service = EmbeddingService()
         self._bm25: Optional[BM25Okapi] = None
@@ -227,14 +226,10 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims: np.ndarray,
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
-        query_vec: np.ndarray,
-        chunk_matrix_dense: np.ndarray,
     ) -> np.ndarray:
         """Vectorized fitness for entire population at once.
 
         population: (pop_size, k) int32
-        query_vec: (n_tokens,) — query token distribution (prior)
-        chunk_matrix_dense: (n_candidates, n_tokens) — chunk token distributions
         Returns: (pop_size,) float32
         """
         pop_size, k = population.shape
@@ -267,23 +262,26 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
             bridging = sub_bridge[:, triu_mask].sum(axis=1) / n_pairs
             redundancy = sub_sim[:, triu_mask].sum(axis=1) / n_pairs
 
-        # ---- Information Gain: KL(posterior || prior) ----
-        # Prior = query token distribution
-        # Posterior = mean token distribution of selected chunks
-        # IG = sum_t posterior(t) * log(posterior(t) / prior(t))
-        # High IG = chunks shifted belief away from query (new information)
-        eps = 1e-8
-        prior = query_vec + eps                        # (n_tokens,)
-        prior = prior / prior.sum()                    # normalize
+        # ---- Embedding Information Gain (second-hop discovery) ----
+        # For each genome, find anchor chunks (top-3 by query similarity).
+        # IG_i = sim(chunk_i, anchors) * (1 - sim(chunk_i, query))
+        # High score = chunk is near an anchor (topically connected) but
+        # far from the query (brings new info). This is the bridge signal.
+        if k < 2:
+            ig = np.zeros(pop_size, dtype=np.float32)
+        else:
+            n_anchors = min(3, k)
+            anchor_pos = np.argpartition(sims, -n_anchors, axis=1)[:, -n_anchors:]
 
-        # Gather selected chunk distributions: (pop_size, k, n_tokens)
-        selected_dists = chunk_matrix_dense[population]
-        # Posterior = mean over selected chunks
-        posterior = selected_dists.mean(axis=1) + eps   # (pop_size, n_tokens)
-        posterior = posterior / posterior.sum(axis=1, keepdims=True)  # normalize
+            # sub_sim already computed: (pop_size, k, k) pairwise embed sim
+            batch_idx = np.arange(pop_size)[:, None, None]
+            anchor_idx = anchor_pos[:, :, None]
+            all_idx = np.arange(k)[None, None, :]
+            anchor_to_all = sub_sim[batch_idx, anchor_idx, all_idx]  # (pop_size, n_anchors, k)
+            anchor_sim = anchor_to_all.mean(axis=1)   # (pop_size, k)
 
-        # KL divergence: sum_t posterior(t) * log(posterior(t) / prior(t))
-        ig = (posterior * np.log(posterior / prior[None, :])).sum(axis=1)  # (pop_size,)
+            novelty = 1.0 - sims                       # (pop_size, k)
+            ig = (anchor_sim * novelty).mean(axis=1)   # (pop_size,)
 
         return (relevance + self.alpha * mg + self.beta * bridging
                 + self.ig_weight * ig - self.gamma * redundancy).astype(np.float32)
@@ -294,13 +292,10 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims: np.ndarray,
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
-        query_vec: np.ndarray,
-        chunk_matrix_dense: np.ndarray,
     ) -> float:
         """Single-genome fitness (wraps batch for consistency)."""
         return float(self.fitness_batch(
             genome[None, :], query_cand_sims, embed_sim_matrix, bridge_matrix,
-            query_vec, chunk_matrix_dense,
         )[0])
 
     # =========================================================================
@@ -434,8 +429,6 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         embed_sim_matrix: np.ndarray,
         bridge_matrix: np.ndarray,
         k: int,
-        query_vec: np.ndarray,
-        chunk_matrix_dense: np.ndarray,
         track_convergence: bool = False,
     ) -> list[int] | tuple[list[int], list[dict]]:
         """Generational GA with embedding-based + information gain fitness."""
@@ -455,8 +448,7 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         population = self.diverse_seeded_population(query_cand_sims, M, k, pop_size)
 
         # Evaluate initial population
-        fit = self.fitness_batch(population, query_cand_sims, embed_sim_matrix, bridge_matrix,
-                                query_vec, chunk_matrix_dense)
+        fit = self.fitness_batch(population, query_cand_sims, embed_sim_matrix, bridge_matrix)
 
         best_idx = int(np.argmax(fit))
         best_fitness = fit[best_idx]
@@ -488,8 +480,7 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
                 )
 
             # Batch fitness for all children in one call
-            children_fit = self.fitness_batch(children, query_cand_sims, embed_sim_matrix, bridge_matrix,
-                                              query_vec, chunk_matrix_dense)
+            children_fit = self.fitness_batch(children, query_cand_sims, embed_sim_matrix, bridge_matrix)
 
             # Assemble new population: elites + children
             population = np.concatenate([population[elite_order], children], axis=0)
@@ -543,17 +534,15 @@ class BayesianEvolutionaryRAGSystem(RAGSystem):
         query_cand_sims = self.build_query_candidate_similarities(query_emb, candidate_embs)
         embed_sim_matrix = self.build_candidate_similarity_matrix(candidate_embs)
 
-        # Token-level matrices (bridging + IG prior/posterior)
-        chunk_matrix, query_vec = self.build_token_matrices(query, candidate_texts)
+        # Token-level bridge matrix (rare-token sharing for multi-hop)
+        chunk_matrix, _ = self.build_token_matrices(query, candidate_texts)
         idf_weights = self.build_idf_weights(chunk_matrix)
         bridge_matrix = self.build_rare_token_bridge_matrix(chunk_matrix, idf_weights)
-        chunk_matrix_dense = chunk_matrix.toarray()
 
         t2 = time.perf_counter()
 
         best_indices = self.run_ga(
             query_cand_sims, embed_sim_matrix, bridge_matrix, k,
-            query_vec, chunk_matrix_dense,
         )
 
         t3 = time.perf_counter()
