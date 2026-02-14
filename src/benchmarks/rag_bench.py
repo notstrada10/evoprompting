@@ -12,7 +12,9 @@ from ..config import Config
 from ..core.bayesian_evolutionary_rag import BayesianEvolutionaryRAGSystem
 from ..core.bm25_evolutionary_rag import BM25EvolutionaryRAGSystem
 from ..core.evolutionary_rag import EvolutionaryRAGSystem
+from ..core.hyde_evolutionary_rag import HyDEEvolutionaryRAGSystem
 from ..core.hyde_rag import HyDERAGSystem
+from ..core.ig_evolutionary_rag import IGEvolutionaryRAGSystem
 from ..core.rag import RAGSystem
 from .metrics import (
     calculate_adherence,
@@ -416,6 +418,8 @@ def run_benchmark_pipeline(
     use_evolution: bool = False,
     use_bm25_evolution: bool = False,
     use_bayesian_evolution: bool = False,
+    use_ig_evolution: bool = False,
+    use_hyde_evolution: bool = False,
 ):
     """Run RAG benchmark pipeline."""
     config = _make_ragbench_config(subset)
@@ -423,7 +427,13 @@ def run_benchmark_pipeline(
     logger.info(f"{config.name.upper()} Evaluation")
     logger.info("="*60)
 
-    if use_bayesian_evolution:
+    if use_hyde_evolution:
+        rag = HyDEEvolutionaryRAGSystem()
+        rag_type = "HyDE-evolutionary"
+    elif use_ig_evolution:
+        rag = IGEvolutionaryRAGSystem()
+        rag_type = "IG-evolutionary"
+    elif use_bayesian_evolution:
         rag = BayesianEvolutionaryRAGSystem()
         rag_type = "Bayesian-evolutionary"
     elif use_bm25_evolution:

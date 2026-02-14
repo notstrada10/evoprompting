@@ -14,7 +14,9 @@ from .bm25_evolutionary_rag import BM25EvolutionaryRAGSystem
 from .db import VectorDatabase
 from .embeddings import EmbeddingService
 from .evolutionary_rag import EvolutionaryRAGSystem
+from .hyde_evolutionary_rag import HyDEEvolutionaryRAGSystem
 from .hyde_rag import HyDERAGSystem
+from .ig_evolutionary_rag import IGEvolutionaryRAGSystem
 from .rag import RAGSystem
 from .tokenizer import Tokenizer
 from .vector_search import VectorSearch
@@ -31,4 +33,6 @@ __all__ = [
     "EvolutionaryRAGSystem",
     "BM25EvolutionaryRAGSystem",
     "BayesianEvolutionaryRAGSystem",
+    "IGEvolutionaryRAGSystem",
+    "HyDEEvolutionaryRAGSystem",
 ]

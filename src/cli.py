@@ -12,7 +12,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from .benchmarks.hotpotqa import run_hotpotqa_llm_only_pipeline, run_hotpotqa_pipeline
 from .benchmarks.rag_bench import run_benchmark_pipeline, run_llm_only_pipeline
 from .config import Config
-from .core.rag import RAGSystem
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 def setup_command(args):
     """Setup the database schema."""
+    from .core.rag import RAGSystem
     logger.info("Setting up database...")
     Config.validate()
     rag = RAGSystem()
@@ -57,6 +57,8 @@ def benchmark_command(args):
             use_evolution=args.use_evolution,
             use_bm25_evolution=args.use_bm25_evolution,
             use_bayesian_evolution=args.use_bayesian_evolution,
+            use_ig_evolution=args.use_ig_evolution,
+            use_hyde_evolution=args.use_hyde_evolution,
         )
 
 
@@ -75,6 +77,8 @@ def hotpotqa_command(args):
             use_evolution=args.use_evolution,
             use_bm25_evolution=args.use_bm25_evolution,
             use_bayesian_evolution=args.use_bayesian_evolution,
+            use_ig_evolution=args.use_ig_evolution,
+            use_hyde_evolution=args.use_hyde_evolution,
         )
 
 
@@ -115,6 +119,10 @@ def main():
                                  help='Use BM25 + bit-string GA for chunk selection')
     benchmark_parser.add_argument('--use-bayesian-evolution', action='store_true',
                                  help='Use Bayesian Information Foraging GA for chunk selection')
+    benchmark_parser.add_argument('--use-ig-evolution', action='store_true',
+                                 help='Use Information Gain evolutionary GA for chunk selection')
+    benchmark_parser.add_argument('--use-hyde-evolution', action='store_true',
+                                 help='Use HyDE + evolutionary GA hybrid for chunk selection')
     benchmark_parser.add_argument('--llm-only', action='store_true',
                                  help='Run LLM-only baseline (no RAG)')
     benchmark_parser.add_argument('--subset', type=str, default='hotpotqa',
@@ -136,6 +144,10 @@ def main():
                                 help='Use BM25 + bit-string GA for chunk selection')
     hotpotqa_parser.add_argument('--use-bayesian-evolution', action='store_true',
                                 help='Use Bayesian Information Foraging GA for chunk selection')
+    hotpotqa_parser.add_argument('--use-hyde-evolution', action='store_true',
+                                help='Use HyDE + evolutionary GA hybrid for chunk selection')
+    hotpotqa_parser.add_argument('--use-ig-evolution', action='store_true',
+                                help='Use Information Gain evolutionary GA for chunk selection')
     hotpotqa_parser.add_argument('--llm-only', action='store_true',
                                 help='Run LLM-only baseline (no RAG)')
 
